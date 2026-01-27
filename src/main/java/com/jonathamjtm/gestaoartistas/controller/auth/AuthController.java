@@ -1,8 +1,8 @@
-package com.jonathamjtm.gestaoartistas.controller;
+package com.jonathamjtm.gestaoartistas.controller.auth;
 
-import com.jonathamjtm.gestaoartistas.dto.AuthResponse;
-import com.jonathamjtm.gestaoartistas.dto.LoginRequest;
-import com.jonathamjtm.gestaoartistas.dto.RegisterRequest;
+import com.jonathamjtm.gestaoartistas.dto.auth.AuthResponse;
+import com.jonathamjtm.gestaoartistas.dto.auth.LoginRequest;
+import com.jonathamjtm.gestaoartistas.dto.auth.RegisterRequest;
 import com.jonathamjtm.gestaoartistas.entity.User;
 import com.jonathamjtm.gestaoartistas.repository.UserRepository;
 import com.jonathamjtm.gestaoartistas.service.TokenService;
@@ -15,14 +15,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
 import java.util.Map;
 
 @RestController

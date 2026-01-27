@@ -1,4 +1,4 @@
-package com.jonathamjtm.gestaoartistas.dto;
+package com.jonathamjtm.gestaoartistas.dto.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,4 +1,4 @@
-package com.jonathamjtm.gestaoartistas.dto;
+package com.jonathamjtm.gestaoartistas.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
