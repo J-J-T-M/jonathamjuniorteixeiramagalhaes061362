@@ -8,7 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
+import java.util.List;
+import java.util.ArrayList;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,11 +34,11 @@ public class Album {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "artist_album", // Nome da tabela pivô criada na V4
+            name = "artist_album",
             joinColumns = @JoinColumn(name = "album_id"),
             inverseJoinColumns = @JoinColumn(name = "artist_id")
     )
-    @JsonIgnoreProperties("albums") // Evita loop infinito no JSON
+    @JsonIgnoreProperties("albums")
     private Set<Artist> artists = new HashSet<>();
 
     @CreationTimestamp
@@ -47,4 +48,7 @@ public class Album {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "album", fetch = FetchType.EAGER)
+    private List<AlbumImage> images;
 }
