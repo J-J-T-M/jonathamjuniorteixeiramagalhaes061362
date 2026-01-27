@@ -18,7 +18,7 @@ import java.util.List;
 @RequestMapping("/api/v1/artists")
 @RequiredArgsConstructor
 @Tag(name = "Artistas", description = "Gerenciamento de bandas e artistas")
-@SecurityRequirement(name = "bearer-key") 
+@SecurityRequirement(name = "bearer-key")
 public class ArtistController {
 
     private final ArtistService artistService;
