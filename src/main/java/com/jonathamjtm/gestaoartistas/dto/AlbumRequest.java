@@ -11,15 +11,15 @@ import java.util.List;
 @Data
 public class AlbumRequest {
 
-    @NotBlank(message = "O título do álbum é obrigatório")
-    @Schema(example = "As Quatro Estações")
+    @NotBlank
+    @Schema(description = "Título do álbum", example = "Hybrid Theory")
     private String title;
 
-    @NotNull(message = "O ano de lançamento é obrigatório")
-    @Schema(example = "1989")
+    @NotNull
+    @Schema(description = "Ano de lançamento", example = "2000")
     private Integer releaseYear;
 
-    @NotEmpty(message = "O álbum deve ter pelo menos um artista")
-    @Schema(description = "Lista de IDs dos artistas desse álbum", example = "[1, 2]")
+    @NotEmpty
+    @Schema(description = "IDs dos artistas que participaram", example = "[1]")
     private List<Long> artistIds;
 }
