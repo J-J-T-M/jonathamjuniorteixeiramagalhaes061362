@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -31,9 +32,13 @@ public class ArtistController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar Artistas", description = "Retorna todos os artistas cadastrados")
-    public ResponseEntity<List<ArtistResponse>> listAll() {
-        return ResponseEntity.ok(artistService.findAll());
+    @Operation(summary = "Listar Artistas", description = "Filtro por nome, data de criação e ordenação.")
+    public ResponseEntity<List<ArtistResponse>> listAll(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) LocalDateTime createdAfter, // Formato ISO
+            @RequestParam(required = false, defaultValue = "ASC") String sortDirection) {
+
+        return ResponseEntity.ok(artistService.findAll(name, createdAfter, sortDirection));
     }
 
     @DeleteMapping("/{id}")
