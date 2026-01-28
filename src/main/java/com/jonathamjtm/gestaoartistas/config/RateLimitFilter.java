@@ -33,6 +33,17 @@ public class RateLimitFilter implements Filter {
 
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
+        String path = httpRequest.getRequestURI();
+
+        if (path.startsWith("/swagger-ui") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/ws") ||
+                path.startsWith("/actuator") ||
+                path.contains("favicon")) {
+
+            chain.doFilter(request, response);
+            return;
+        }
 
         String key = resolveKey(httpRequest);
         Bucket bucket = cache.computeIfAbsent(key, this::createNewBucket);
