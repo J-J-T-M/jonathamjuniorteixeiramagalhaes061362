@@ -11,7 +11,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -31,9 +35,15 @@ public class AlbumController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar Álbuns", description = "Lista todos os álbuns com seus respectivos artistas")
-    public ResponseEntity<List<AlbumResponse>> listAll() {
-        return ResponseEntity.ok(albumService.findAll());
+    @Operation(summary = "Listar Álbuns (Busca Avançada)", description = "Filtre por título, artista, ano de lançamento (>=) e data de criação (>=).")
+    public ResponseEntity<Page<AlbumResponse>> listAll(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) Long artistId,
+            @RequestParam(required = false) Integer releaseYear, // Busca deste ano para frente
+            @RequestParam(required = false) LocalDateTime createdAfter,
+            @PageableDefault(size = 10, sort = "title") Pageable pageable) {
+
+        return ResponseEntity.ok(albumService.findAll(title, artistId, releaseYear, createdAfter, pageable));
     }
 
     @DeleteMapping("/{id}")
