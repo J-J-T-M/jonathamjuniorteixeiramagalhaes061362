@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class ArtistRequest {
 
-    @NotBlank(message = "O nome do artista é obrigatório")
-    @Schema(description = "Nome do artista ou banda", example = "Legião Urbana")
+    @NotBlank(message = "O nome é obrigatório")
+    @Schema(description = "Nome da banda ou artista solo", example = "Linkin Park") // <--- O Pulo do Gato
     private String name;
 }
