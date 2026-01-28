@@ -20,11 +20,9 @@ public class RegionalController {
     private final RegionalSyncService regionalSyncService;
 
     @PostMapping("/sync")
-    @Operation(summary = "Forçar Sincronização", description = "Dispara manualmente a rotina de importação das regionais da API externa.")
+    @Operation(summary = "Forçar Sincronização", description = "Dispara job em background (Async).")
     public ResponseEntity<String> forceSync() {
-        // Chama o mesmo método que o agendador chama
-        regionalSyncService.syncRegionals();
-
-        return ResponseEntity.ok("Sincronização realizada com sucesso!");
+        regionalSyncService.executeSyncJob();
+        return ResponseEntity.ok("Job de sincronização disparado com sucesso! Verifique os logs.");
     }
 }
