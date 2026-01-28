@@ -8,13 +8,18 @@ import com.jonathamjtm.gestaoartistas.entity.Artist;
 import com.jonathamjtm.gestaoartistas.repository.AlbumImageRepository;
 import com.jonathamjtm.gestaoartistas.repository.AlbumRepository;
 import com.jonathamjtm.gestaoartistas.repository.ArtistRepository;
+import com.jonathamjtm.gestaoartistas.repository.specs.AlbumSpecs;
 import com.jonathamjtm.gestaoartistas.service.storage.StorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -73,22 +78,12 @@ public class AlbumService {
         }
     }
 
+    public Page<AlbumResponse> findAll(String title, Long artistId, Integer releaseYear, LocalDateTime createdAfter, Pageable pageable) {
 
-    public List<AlbumResponse> findAll() {
-        return albumRepository.findAll().stream()
-                .map(album -> {
-                    AlbumResponse response = new AlbumResponse(album);
+        Specification<Album> spec = AlbumSpecs.filterBy(title, artistId, releaseYear, createdAfter);
 
-                    if (album.getImages() != null) {
-                        List<String> urls = album.getImages().stream()
-                                .map(img -> storageService.getPresignedUrl(img.getFileName()))
-                                .collect(Collectors.toList());
-                        response.setCoverUrls(urls);
-                    }
-
-                    return response;
-                })
-                .collect(Collectors.toList());
+        return albumRepository.findAll(spec, pageable)
+                .map(AlbumResponse::new);
     }
 
     @Transactional
