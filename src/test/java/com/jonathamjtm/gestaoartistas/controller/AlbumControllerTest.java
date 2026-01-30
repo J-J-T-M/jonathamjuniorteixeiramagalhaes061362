@@ -4,7 +4,7 @@ import com.jonathamjtm.gestaoartistas.BaseIntegrationTest;
 import com.jonathamjtm.gestaoartistas.dto.AlbumRequest;
 import com.jonathamjtm.gestaoartistas.entity.Artist;
 import com.jonathamjtm.gestaoartistas.repository.ArtistRepository;
-import com.jonathamjtm.gestaoartistas.service.FileStorageService;
+import com.jonathamjtm.gestaoartistas.service.storage.FileStorageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +33,11 @@ class AlbumControllerTest extends BaseIntegrationTest {
         request.setArtistIds(List.of(artist.getId()));
 
         mockMvc.perform(post("/api/v1/albums")
-                        .header("Authorization", generateAdminToken())
+                        .header("Authorization", gerarTokenAdmin())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Meteora"))
-                .andExpect(jsonPath("$.artists[0].name").value("Linkin Park"));
+                .andExpect(jsonPath("$.artistNames[0]").value("Linkin Park"));
     }
 }
