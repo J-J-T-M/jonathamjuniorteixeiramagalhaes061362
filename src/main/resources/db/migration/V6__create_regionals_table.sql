@@ -6,3 +6,5 @@ CREATE TABLE regionals
     active      BOOLEAN      NOT NULL,
     updated_at  TIMESTAMP
 );
+
+CREATE INDEX idx_regionals_external_active ON regionals (external_id, active);
