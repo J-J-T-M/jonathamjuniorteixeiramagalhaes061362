@@ -14,17 +14,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class RegionalControllerTest extends BaseIntegrationTest {
 
-    @Autowired private RegionalRepository repository;
+    @Autowired
+    private RegionalRepository repository;
 
     @BeforeEach
     void setup() {
         repository.deleteAll();
-        repository.save(Regional.builder().id(1L).name("Cuiabá").active(true).build());
-        repository.save(Regional.builder().id(2L).name("Rondonópolis (Antiga)").active(false).build());
+
+        repository.save(Regional.builder()
+                .regionalId(101L)
+                .name("Cuiabá")
+                .active(true)
+                .build());
+
+        repository.save(Regional.builder()
+                .regionalId(102L)
+                .name("Rondonópolis (Antiga)")
+                .active(false)
+                .build());
     }
 
     @Test
-    @DisplayName("GET /regionais - Deve trazer TODAS se não filtrar")
+    @DisplayName("GET /api/v1/regionais - Deve trazer TODAS se não filtrar")
     void shouldListAll() throws Exception {
         mockMvc.perform(get("/api/v1/regionais")
                         .header("Authorization", gerarTokenAdmin()))
@@ -33,7 +44,7 @@ class RegionalControllerTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /regionais?active=true - Deve trazer APENAS ATIVAS")
+    @DisplayName("GET /api/v1/regionais?active=true - Deve trazer APENAS ATIVAS")
     void shouldListOnlyActive() throws Exception {
         mockMvc.perform(get("/api/v1/regionais")
                         .param("active", "true")
