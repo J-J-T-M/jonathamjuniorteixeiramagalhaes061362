@@ -5,9 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -33,7 +35,7 @@ public class GlobalExceptionHandler {
                 "status", HttpStatus.BAD_REQUEST.value(),
                 "error", "Erro de Validação",
                 "message", "Verifique os campos informados",
-                "details", errors, // Retorna qual campo falhou e porquê
+                "details", errors,
                 "path", request.getRequestURI()
         );
 
@@ -42,8 +44,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Object> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
-        log.error("Erro de Negócio na requisição [{}]: {}", request.getRequestURI(), ex.getMessage(), ex);
+        if (ex.getMessage().toLowerCase().contains("não encontrado")) {
+            log.warn("Recurso não encontrado [{}]: {}", request.getRequestURI(), ex.getMessage());
+            Map<String, Object> body = Map.of(
+                    "timestamp", LocalDateTime.now(),
+                    "status", HttpStatus.NOT_FOUND.value(),
+                    "error", "Não Encontrado",
+                    "message", ex.getMessage(),
+                    "path", request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+        }
 
+        // Caso contrário, retorna 400 (Bad Request) ou 500 dependendo da regra
+        log.error("Erro de Negócio na requisição [{}]: {}", request.getRequestURI(), ex.getMessage(), ex);
         Map<String, Object> body = Map.of(
                 "timestamp", LocalDateTime.now(),
                 "status", HttpStatus.BAD_REQUEST.value(),
@@ -51,14 +65,36 @@ public class GlobalExceptionHandler {
                 "message", ex.getMessage(),
                 "path", request.getRequestURI()
         );
-
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Object> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+        Map<String, Object> body = Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", HttpStatus.METHOD_NOT_ALLOWED.value(),
+                "error", "Método não permitido",
+                "message", ex.getMessage(),
+                "path", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(body);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Object> handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request) {
+        Map<String, Object> body = Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", HttpStatus.NOT_FOUND.value(),
+                "error", "Rota não encontrada",
+                "message", "O recurso solicitado não existe",
+                "path", request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleGeneralException(Exception ex, HttpServletRequest request) {
         log.error("ERRO CRÍTICO/INESPERADO [{}]: {}", request.getRequestURI(), ex.getMessage(), ex);
-
         Map<String, Object> body = Map.of(
                 "timestamp", LocalDateTime.now(),
                 "status", HttpStatus.INTERNAL_SERVER_ERROR.value(),
@@ -66,7 +102,6 @@ public class GlobalExceptionHandler {
                 "message", "Ocorreu um erro inesperado. Por favor, contate o suporte.",
                 "path", request.getRequestURI()
         );
-
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 }
