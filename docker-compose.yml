@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # ==========================================
-  # APLICAÇÃO (API)
+  # APLICAÇAO (API)
   # ==========================================
   api:
     build: .
@@ -35,13 +35,13 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: gestao_artistas_api_db # NOME CORRETO AQUI
+      POSTGRES_DB: gestao_artistas_api_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      # NOME CORRETO NO TESTE DE SAÚDE
+      # NOME CORRETO NO TESTE DE SAUDE
       test: ["CMD-SHELL", "pg_isready -U user -d gestao_artistas_api_db"]
       interval: 5s
       timeout: 5s
@@ -65,7 +65,7 @@ services:
       - minio_data:/data
 
   # ==========================================
-  # CONFIGURADOR (Cria bucket automático)
+  # CONFIGURADOR (Cria bucket automatico)
   # ==========================================
   createbuckets:
     image: minio/mc
