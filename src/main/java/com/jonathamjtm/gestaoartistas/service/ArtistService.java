@@ -50,6 +50,16 @@ public class ArtistService {
     }
 
     @Transactional
+    public ArtistResponse update(Long id, ArtistRequest request) {
+        Artist artist = artistRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Artista não encontrado"));
+
+        artist.setName(request.getName());
+
+        return new ArtistResponse(artistRepository.save(artist));
+    }
+
+    @Transactional
     public void deleteArtist(Long id) {
         if (!artistRepository.existsById(id)) {
             throw new RuntimeException("Artista não encontrado para exclusão");
