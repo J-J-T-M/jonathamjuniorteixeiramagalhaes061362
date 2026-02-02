@@ -21,17 +21,17 @@ class RegionalControllerTest extends BaseIntegrationTest {
     void setup() {
         repository.deleteAll();
 
-        repository.save(Regional.builder()
-                .regionalId(101L)
-                .name("Cuiabá")
-                .active(true)
-                .build());
+        Regional r1 = new Regional();
+        r1.setExternalId(101L);
+        r1.setName("Cuiabá");
+        r1.setActive(true);
+        repository.save(r1);
 
-        repository.save(Regional.builder()
-                .regionalId(102L)
-                .name("Rondonópolis (Antiga)")
-                .active(false)
-                .build());
+        Regional r2 = new Regional();
+        r2.setExternalId(102L);
+        r2.setName("Rondonópolis (Antiga)");
+        r2.setActive(false);
+        repository.save(r2);
     }
 
     @Test
