@@ -2,7 +2,30 @@ version: '3.8'
 
 services:
   # ==========================================
-  # BANCO DE DADOS (PostgreSQL)
+  # APLICAÇÃO (API)
+  # ==========================================
+  api:
+    build: .
+    container_name: gestao_artistas_api
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy  # <--- O PULO DO GATO: Espera o banco estar 100%
+      minio:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/hemovida_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET_NAME: capas-albuns
+
+  # ==========================================
+  # BANCO DE DADOS (Com Healthcheck)
   # ==========================================
   db:
     image: postgres:15-alpine
@@ -16,6 +39,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Verifica a cada 5s se o banco já aceita conexões
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d hemovida_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # ==========================================
   # STORAGE S3 (MinIO)
@@ -33,6 +62,21 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+
+  # ==========================================
+  # CONFIGURADOR (Cria bucket automático)
+  # ==========================================
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb myminio/capas-albuns;
+      /usr/bin/mc anonymous set public myminio/capas-albuns;
+      exit 0;
+      "
 
 volumes:
   postgres_data:
