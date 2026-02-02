@@ -14,8 +14,8 @@ import org.springframework.http.MediaType;
 import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -55,7 +55,7 @@ class ArtistControllerTest extends BaseIntegrationTest {
         artistRepository.save(Artist.builder().name("Beta").build());
         artistRepository.save(Artist.builder().name("Omega").build());
 
-        // ACT: Busca sem filtro, mas com ordenação DESC
+        // ACT
         mockMvc.perform(get("/api/v1/artists")
                         .header("Authorization", gerarTokenAdmin())
                         .param("sortDirection", "DESC"))
@@ -68,7 +68,7 @@ class ArtistControllerTest extends BaseIntegrationTest {
     @Test
     @DisplayName("GET /artists - Deve filtrar por DATA DE CRIAÇÃO (Recentes)")
     void shouldFilterByCreatedAfter() throws Exception {
-        // ARRANGE: Cria um artista (a data será "agora" automaticamente pelo @CreationTimestamp)
+        // ARRANGE
         artistRepository.save(Artist.builder().name("Artista Recente").build());
 
         String dataOntem = LocalDateTime.now().minusDays(1).toString();
@@ -103,5 +103,37 @@ class ArtistControllerTest extends BaseIntegrationTest {
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Nome Novo"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/artists - Deve criar um artista com sucesso")
+    void shouldCreateArtist() throws Exception {
+        // ARRANGE
+        ArtistRequest request = new ArtistRequest();
+        request.setName("Linkin Park");
+
+        // ACT & ASSERT
+        mockMvc.perform(post("/api/v1/artists")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("Authorization", gerarTokenAdmin()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.name", is("Linkin Park")));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/artists - Deve falhar ao criar artista sem nome")
+    void shouldReturnBadRequestWhenNameIsMissing() throws Exception {
+        // ARRANGE
+        ArtistRequest request = new ArtistRequest();
+        request.setName("");
+
+        // ACT & ASSERT
+        mockMvc.perform(post("/api/v1/artists")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("Authorization", gerarTokenAdmin()))
+                .andExpect(status().isBadRequest());
     }
 }
