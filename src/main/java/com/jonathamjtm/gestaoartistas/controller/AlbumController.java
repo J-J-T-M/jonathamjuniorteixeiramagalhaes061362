@@ -46,6 +46,12 @@ public class AlbumController {
         return ResponseEntity.ok(albumService.findAll(title, artistId, releaseYear, createdAfter, pageable));
     }
 
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar Álbum por ID", description = "Retorna os detalhes de um álbum específico")
+    public ResponseEntity<AlbumResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(albumService.findById(id));
+    }
+
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar Álbum", description = "Atualiza título, ano e lista de artistas")
     public ResponseEntity<AlbumResponse> update(@PathVariable Long id, @RequestBody @Valid AlbumRequest request) {
