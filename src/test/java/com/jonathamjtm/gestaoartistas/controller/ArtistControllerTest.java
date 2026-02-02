@@ -1,17 +1,20 @@
 package com.jonathamjtm.gestaoartistas.controller;
 
 import com.jonathamjtm.gestaoartistas.BaseIntegrationTest;
+import com.jonathamjtm.gestaoartistas.dto.ArtistRequest;
 import com.jonathamjtm.gestaoartistas.entity.Artist;
 import com.jonathamjtm.gestaoartistas.repository.ArtistRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 
 import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -81,5 +84,22 @@ class ArtistControllerTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1))) // Só deve vir o novo
                 .andExpect(jsonPath("$[0].name").value("Novo Artista"));
+    }
+
+    @Test
+    @DisplayName("PUT /artists - Deve ATUALIZAR nome do artista")
+    void shouldUpdateArtist() throws Exception {
+        // ARRANGE
+        Artist artist = artistRepository.save(Artist.builder().name("Nome Antigo").build());
+        ArtistRequest updateRequest = new ArtistRequest();
+        updateRequest.setName("Nome Novo");
+
+        // ACT & ASSERT
+        mockMvc.perform(put("/api/v1/artists/" + artist.getId())
+                        .header("Authorization", gerarTokenAdmin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Nome Novo"));
     }
 }
