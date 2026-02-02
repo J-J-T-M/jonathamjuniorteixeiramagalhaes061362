@@ -122,4 +122,14 @@ public class AlbumService {
         if (fileName == null || !fileName.contains(".")) return "jpg";
         return fileName.substring(fileName.lastIndexOf(".") + 1);
     }
+
+    @Transactional(readOnly = true)
+    public String findImageNameByAlbumId(Long id) {
+        Album album = albumRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Álbum não encontrado"));
+
+        return albumImageRepository.findByAlbumId(id)
+                .map(AlbumImage::getFileName)
+                .orElseThrow(() -> new RuntimeException("Imagem não encontrada para este álbum"));
+    }
 }
