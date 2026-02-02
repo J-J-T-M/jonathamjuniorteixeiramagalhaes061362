@@ -46,6 +46,12 @@ public class AlbumController {
         return ResponseEntity.ok(albumService.findAll(title, artistId, releaseYear, createdAfter, pageable));
     }
 
+    @PutMapping("/{id}")
+    @Operation(summary = "Atualizar Álbum", description = "Atualiza título, ano e lista de artistas")
+    public ResponseEntity<AlbumResponse> update(@PathVariable Long id, @RequestBody @Valid AlbumRequest request) {
+        return ResponseEntity.ok(albumService.update(id, request));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Deletar Álbum", description = "Remove um álbum do sistema")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
