@@ -1,21 +1,25 @@
 package com.jonathamjtm.gestaoartistas.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jonathamjtm.gestaoartistas.BaseIntegrationTest;
+import com.jonathamjtm.gestaoartistas.dto.AlbumRequest;
 import com.jonathamjtm.gestaoartistas.entity.Album;
 import com.jonathamjtm.gestaoartistas.entity.Artist;
 import com.jonathamjtm.gestaoartistas.repository.AlbumRepository;
 import com.jonathamjtm.gestaoartistas.repository.ArtistRepository;
-import com.jonathamjtm.gestaoartistas.service.storage.FileStorageService;
+import com.jonathamjtm.gestaoartistas.service.storage.MinioStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Set;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,8 +27,10 @@ class AlbumControllerTest extends BaseIntegrationTest {
 
     @Autowired private AlbumRepository albumRepository;
     @Autowired private ArtistRepository artistRepository;
+    @Autowired private ObjectMapper objectMapper;
 
-    @MockitoBean private FileStorageService fileStorageService;
+    @MockitoBean
+    private MinioStorageService minioStorageService;
 
     @BeforeEach
     void setup() {
@@ -110,6 +116,7 @@ class AlbumControllerTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.content[1].title").value("A - First"));
     }
 
+    // --- 6. Teste de Paginação ---
     @Test
     @DisplayName("Deve PAGINAR corretamente")
     void shouldPaginateCorrectly() throws Exception {
@@ -150,7 +157,7 @@ class AlbumControllerTest extends BaseIntegrationTest {
         album = albumRepository.save(album);
 
         // ACT
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/albums/" + album.getId())
+        mockMvc.perform(delete("/api/v1/albums/" + album.getId())
                         .header("Authorization", gerarTokenAdmin()))
                 .andExpect(status().isNoContent());
 
@@ -158,6 +165,24 @@ class AlbumControllerTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/v1/albums/" + album.getId())
                         .header("Authorization", gerarTokenAdmin()))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("POST /albums - Deve criar um álbum novo")
+    void shouldCreateAlbum() throws Exception {
+        Artist art = artistRepository.save(Artist.builder().name("Artist Create").build());
+
+        AlbumRequest request = new AlbumRequest();
+        request.setTitle("Novo Album");
+        request.setReleaseYear(2024);
+        request.setArtistIds(List.of(art.getId()));
+
+        mockMvc.perform(post("/api/v1/albums")
+                        .header("Authorization", gerarTokenAdmin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title", is("Novo Album")));
     }
 
     private void createAlbum(String title, int year, Artist artist) {
