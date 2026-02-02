@@ -43,7 +43,7 @@ public class RegionalController {
     @PostMapping("/sync")
     @Operation(summary = "Forçar Sincronização", description = "Dispara job em background (Async) para puxar dados da API externa.")
     public ResponseEntity<String> forceSync() {
-        regionalSyncService.executeSyncJob();
+        regionalSyncService.syncRegionals();
         return ResponseEntity.ok("Job de sincronização disparado com sucesso! Verifique os logs.");
     }
 }
