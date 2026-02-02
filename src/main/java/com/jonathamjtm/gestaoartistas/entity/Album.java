@@ -1,25 +1,23 @@
 package com.jonathamjtm.gestaoartistas.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import java.util.List;
-import java.util.ArrayList;
+
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "albums")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = "artists")
 public class Album {
 
     @Id
@@ -29,7 +27,6 @@ public class Album {
     @Column(nullable = false)
     private String title;
 
-    @Column(name = "release_year")
     private Integer releaseYear;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -38,17 +35,12 @@ public class Album {
             joinColumns = @JoinColumn(name = "album_id"),
             inverseJoinColumns = @JoinColumn(name = "artist_id")
     )
-    @JsonIgnoreProperties("albums")
+    @Builder.Default
     private Set<Artist> artists = new HashSet<>();
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "album", fetch = FetchType.EAGER)
-    private List<AlbumImage> images;
 }
