@@ -1,5 +1,6 @@
 package com.jonathamjtm.gestaoartistas.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jonathamjtm.gestaoartistas.BaseIntegrationTest;
 import com.jonathamjtm.gestaoartistas.dto.ArtistRequest;
 import com.jonathamjtm.gestaoartistas.entity.Artist;
@@ -21,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ArtistControllerTest extends BaseIntegrationTest {
 
     @Autowired private ArtistRepository artistRepository;
+    @Autowired private ObjectMapper objectMapper;
 
     @BeforeEach
     void setup() {
@@ -35,7 +37,7 @@ class ArtistControllerTest extends BaseIntegrationTest {
         artistRepository.save(Artist.builder().name("L.A. Guns").build());
         artistRepository.save(Artist.builder().name("Bon Jovi").build());
 
-        // ACT e ASSERT
+        // ACT & ASSERT
         mockMvc.perform(get("/api/v1/artists")
                         .header("Authorization", gerarTokenAdmin())
                         .param("name", "guns"))
@@ -53,7 +55,7 @@ class ArtistControllerTest extends BaseIntegrationTest {
         artistRepository.save(Artist.builder().name("Beta").build());
         artistRepository.save(Artist.builder().name("Omega").build());
 
-        // ACT
+        // ACT: Busca sem filtro, mas com ordenação DESC
         mockMvc.perform(get("/api/v1/artists")
                         .header("Authorization", gerarTokenAdmin())
                         .param("sortDirection", "DESC"))
@@ -66,24 +68,24 @@ class ArtistControllerTest extends BaseIntegrationTest {
     @Test
     @DisplayName("GET /artists - Deve filtrar por DATA DE CRIAÇÃO (Recentes)")
     void shouldFilterByCreatedAfter() throws Exception {
-        // ARRANGE
-        Artist antigo = new Artist(null, "Velho Artista", null, null, null);
-        antigo.setCreatedAt(LocalDateTime.now().minusDays(10));
-        artistRepository.save(antigo);
-
-        Artist novo = new Artist(null, "Novo Artista", null, null, null);
-        novo.setCreatedAt(LocalDateTime.now());
-        artistRepository.save(novo);
+        // ARRANGE: Cria um artista (a data será "agora" automaticamente pelo @CreationTimestamp)
+        artistRepository.save(Artist.builder().name("Artista Recente").build());
 
         String dataOntem = LocalDateTime.now().minusDays(1).toString();
+        String dataAmanha = LocalDateTime.now().plusDays(1).toString();
 
-        // ACT
         mockMvc.perform(get("/api/v1/artists")
                         .header("Authorization", gerarTokenAdmin())
                         .param("createdAfter", dataOntem))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1))) // Só deve vir o novo
-                .andExpect(jsonPath("$[0].name").value("Novo Artista"));
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name").value("Artista Recente"));
+
+        mockMvc.perform(get("/api/v1/artists")
+                        .header("Authorization", gerarTokenAdmin())
+                        .param("createdAfter", dataAmanha))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test
