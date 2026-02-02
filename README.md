@@ -6,65 +6,49 @@ API RESTful desenvolvida para o gerenciamento de artistas, álbuns e discografia
 
 ## 🚀 Tecnologias Utilizadas
 
-* **Linguagem:** Java 21 (LTS)
-* **Framework:** Spring Boot 3.5
-* **Banco de Dados:** PostgreSQL 16
-* **Versionamento de Banco:** Flyway Migration
-* **Object Storage:** MinIO (Compatível com AWS S3)
-* **Segurança:** Spring Security, JWT (HMAC SHA256), Refresh Token
-* **Proteção:** Bucket4j (Rate Limiting), CORS (Allowlist estrita)
-* **Real-time:** WebSocket (STOMP)
-* **Testes:** JUnit 5, Mockito, Testcontainers, Awaitility
-* **Containerização:** Docker & Docker Compose
+* **Linguagem:** Java 21 (LTS) - Utilizando novos recursos como Records e Pattern Matching.
+* **Framework:** Spring Boot 3.5 - Ecossistema robusto para desenvolvimento ágil.
+* **Banco de Dados:** PostgreSQL 16 - Relacional, robusto e escalável.
+* **Versionamento de Banco:** Flyway Migration - Controle de versão do schema do banco.
+* **Object Storage:** MinIO - Armazenamento de objetos compatível com AWS S3.
+* **Segurança:** Spring Security 6 + JWT (Stateless Authentication).
+* **Proteção:** Bucket4j (Rate Limiting) e CORS Configurado.
+* **Real-time:** WebSocket (STOMP) para notificações push.
+* **Testes:** JUnit 5, Mockito, Testcontainers e Awaitility.
+* **Infraestrutura:** Docker & Docker Compose.
 
 ---
 
-## 🏛️ Decisões de Arquitetura e Design
+## 🏛️ Arquitetura e Decisões de Design
 
-### 1. Histórico de Regionais (SCD Tipo 2)
+A arquitetura do projeto segue o padrão de **Camadas (Layered Architecture)**, promovendo a separação de responsabilidades (Separation of Concerns) e facilitando a manutenção e testabilidade.
 
+### 1. Estrutura de Camadas
+* **Controller Layer (`web`):** Responsável apenas por receber as requisições HTTP, validar os dados de entrada (Bean Validation) e converter DTOs. Não contém regras de negócio.
+* **Service Layer (`business`):** O coração da aplicação. Encapsula toda a lógica de negócio, regras de validação complexas e controle transacional (`@Transactional`). Garante a consistência dos dados antes de persistir.
+* **Repository Layer (`data-access`):** Abstração do acesso a dados utilizando **Spring Data JPA**. Permite a troca fácil da implementação de persistência e facilita a criação de Mocks para testes unitários.
+* **Domain Layer (`entities`):** Representa os objetos persistentes do banco de dados (ORM).
+* **DTO Layer (Data Transfer Objects):** Padrão utilizado para desacoplar a API pública do modelo de dados interno. Isso evita o vazamento de dados sensíveis (ex: senhas) e permite evoluir o banco de dados sem quebrar contratos de API existentes (Versioning).
+
+### 2. Histórico de Regionais (SCD Tipo 2)
 Para atender ao requisito de negócio que exige **preservar o histórico** caso o nome de uma Regional mude na API externa, optou-se pela estratégia de **Slowly Changing Dimension (SCD) Type 2**.
+* **Problema:** A API externa é a "fonte da verdade", mas seus dados são mutáveis. Um `UPDATE` simples perderia o rastro histórico de vinculações passadas.
+* **Solução:** A tabela `regionals` foi modelada com uma chave sub-rogada (`id`) distinta da chave de negócio (`external_id`) e um flag `active`.
+* **Fluxo:** Ao detectar mudança de nome:
+    1. O registro antigo é inativado (`active=false`).
+    2. Um novo registro é criado (`active=true`).
+    3. Isso garante integridade referencial histórica para relatórios e auditoria.
 
-**O problema**
-A API externa é a *fonte da verdade*. Se a regional `101` muda de `Cuiabá` para `Cuiabá - Centro`, um simples `UPDATE` destruiria a informação histórica de que, no passado, álbuns estavam vinculados à regional `Cuiabá`.
+### 3. Strategy Pattern para Armazenamento
+Utilizamos uma interface `StorageService` para abstrair o armazenamento de arquivos.
+* **Implementação Atual:** `MinIOStorageService` (simulando S3).
+* **Benefício:** Permite migrar para AWS S3, Azure Blob Storage ou Google Cloud Storage apenas alterando a injeção de dependência, sem tocar na lógica de negócio dos Controllers ou Services.
 
-**A solução**
-
-1. A tabela `regionals` foi estruturada desacoplando a **chave primária interna (`id`)** da **chave de negócio (`external_id`)**.
-2. Foi adicionado o campo booleano `active` para controle de versão.
-
-**Fluxo de sincronização**
-
-* Ao detectar mudança de nome para o mesmo `external_id`:
-
-  * O registro antigo é marcado como `active = false`.
-  * Um novo registro é inserido com o novo nome e `active = true`.
-
-Essa abordagem garante integridade referencial, rastreabilidade histórica e suporte a auditorias e relatórios retroativos.
-
----
-
-### 2. Armazenamento de Imagens (Strategy Pattern + MinIO)
-
-Para evitar o antipadrão de armazenar binários (BLOBs) no banco de dados, foi aplicada a estratégia de **abstração por interface**.
-
-* Interface: `StorageService`
-* Implementação padrão: **MinIO** (compatível com AWS S3)
-
-**Benefícios**
-
-* Redução de carga no banco de dados
-* Melhor escalabilidade
-* Facilidade de migração para AWS S3 ou Google Cloud Storage apenas trocando configurações
-
----
-
-### 3. Segurança em Profundidade (Defense in Depth)
-
-* **Autenticação Stateless** com Access Token (curta duração) e Refresh Token (7 dias)
-* **Rate Limiting** via Bucket4j (10 requisições/minuto por IP, configurável)
-* **CORS** com política restritiva baseada em Allowlist
-
+### 4. Cross-Cutting Concerns (Aspectos Transversais)
+Funcionalidades que atravessam toda a aplicação foram implementadas via **Filtros e Configurações Globais**, garantindo que a regra de negócio não seja poluída.
+* **Global Exception Handling:** Um `@RestControllerAdvice` captura exceções (como `ResourceNotFoundException` ou `BadCredentialsException`) e padroniza a resposta JSON com códigos HTTP corretos (404, 403, 400).
+* **Rate Limiting:** Implementado via Filtro (`RateLimitFilter`) utilizando o algoritmo **Token Bucket**. Protege a API contra ataques de Força Bruta e Negação de Serviço (DoS), limitando requisições por IP.
+* **Auditoria de Segurança:** O Spring Security intercepta todas as requisições para validar tokens JWT antes que elas cheguem aos Controllers.
 ---
 
 ## 🛠️ Como Rodar o Projeto
