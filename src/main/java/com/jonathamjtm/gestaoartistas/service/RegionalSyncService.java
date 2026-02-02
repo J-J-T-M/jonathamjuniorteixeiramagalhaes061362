@@ -13,6 +13,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,40 +22,40 @@ import java.util.Optional;
 public class RegionalSyncService {
 
     private final RegionalRepository regionalRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+
+    private final RestTemplate restTemplate;
 
     @Value("${integration.regionais.url}")
-    private String regionalsUrl;
+    private String apiUrl;
 
-    /**
-     * @Async("jobExecutor"): Roda em background para não travar a API.
-     */
     @Async("jobExecutor")
     @Transactional
     public void syncRegionals() {
         log.info("JOB INICIADO: Sincronização de regionais...");
 
         try {
-            ExternalRegionalDTO[] regionals = restTemplate.getForObject(regionalsUrl, ExternalRegionalDTO[].class);
+            ExternalRegionalDTO[] response = restTemplate.getForObject(apiUrl, ExternalRegionalDTO[].class);
 
-            if (regionals != null) {
-                Arrays.stream(regionals).forEach(this::processRegional);
+            if (response != null) {
+                Arrays.stream(response).forEach(this::processSingleRegional);
+
+                inactivateMissingRegionals(response);
             }
+            log.info("JOB FINALIZADO: Sincronização concluída.");
 
-            log.info("JOB FINALIZADO: Sincronização concluída com sucesso.");
         } catch (Exception e) {
             log.error("JOB FALHOU: Erro ao sincronizar regionais: {}", e.getMessage());
         }
     }
 
-    private void processRegional(ExternalRegionalDTO dto) {
+    private void processSingleRegional(ExternalRegionalDTO dto) {
         Optional<Regional> existingOpt = regionalRepository.findByExternalIdAndActiveTrue(dto.getId());
 
         if (existingOpt.isPresent()) {
             Regional existing = existingOpt.get();
 
             if (!existing.getName().equalsIgnoreCase(dto.getNome())) {
-                log.info("Regional {} alterada. Versionando...", dto.getId());
+                log.info("ALTERAÇÃO DETECTADA: '{}' -> '{}'. Versionando...", existing.getName(), dto.getNome());
 
                 existing.setActive(false);
                 regionalRepository.save(existing);
@@ -72,6 +74,18 @@ public class RegionalSyncService {
         newRegional.setActive(true);
 
         regionalRepository.save(newRegional);
-        log.info("Nova versão da Regional criada: ID Externo={} -> ID Banco={}", dto.getId(), newRegional.getId());
+    }
+
+    private void inactivateMissingRegionals(ExternalRegionalDTO[] remoteList) {
+        Set<Long> remoteIds = Arrays.stream(remoteList)
+                .map(ExternalRegionalDTO::getId)
+                .collect(Collectors.toSet());
+
+        for (Regional local : regionalRepository.findByActiveTrue()) {
+            if (!remoteIds.contains(local.getExternalId())) {
+                local.setActive(false);
+                regionalRepository.save(local);
+            }
+        }
     }
 }
