@@ -5,25 +5,25 @@ import com.jonathamjtm.gestaoartistas.dto.AlbumResponse;
 import com.jonathamjtm.gestaoartistas.entity.Album;
 import com.jonathamjtm.gestaoartistas.entity.AlbumImage;
 import com.jonathamjtm.gestaoartistas.entity.Artist;
+import com.jonathamjtm.gestaoartistas.exception.ResourceNotFoundException;
 import com.jonathamjtm.gestaoartistas.repository.AlbumImageRepository;
 import com.jonathamjtm.gestaoartistas.repository.AlbumRepository;
 import com.jonathamjtm.gestaoartistas.repository.ArtistRepository;
 import com.jonathamjtm.gestaoartistas.repository.specs.AlbumSpecs;
 import com.jonathamjtm.gestaoartistas.service.storage.StorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +38,10 @@ public class AlbumService {
     @Transactional
     public AlbumResponse createAlbum(AlbumRequest request) {
         List<Artist> foundArtists = artistRepository.findAllById(request.getArtistIds());
-        if (foundArtists.isEmpty()) throw new RuntimeException("Artistas não encontrados");
+
+        if (foundArtists.isEmpty()) {
+            throw new ResourceNotFoundException("Artistas não encontrados com os IDs fornecidos");
+        }
 
         Album album = Album.builder()
                 .title(request.getTitle())
@@ -51,13 +54,14 @@ public class AlbumService {
         AlbumResponse response = new AlbumResponse(savedAlbum);
 
         messagingTemplate.convertAndSend("/topic/albums", response);
+
         return response;
     }
 
     @Transactional
     public void uploadAlbumCover(Long albumId, MultipartFile file) {
         Album album = albumRepository.findById(albumId)
-                .orElseThrow(() -> new RuntimeException("Álbum não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Álbum não encontrado"));
 
         String extension = getFileExtension(file.getOriginalFilename());
         String fileName = UUID.randomUUID().toString() + "." + extension;
@@ -79,7 +83,6 @@ public class AlbumService {
     }
 
     public Page<AlbumResponse> findAll(String title, Long artistId, Integer releaseYear, LocalDateTime createdAfter, Pageable pageable) {
-
         Specification<Album> spec = AlbumSpecs.filterBy(title, artistId, releaseYear, createdAfter);
 
         return albumRepository.findAll(spec, pageable)
@@ -89,14 +92,14 @@ public class AlbumService {
     @Transactional(readOnly = true)
     public AlbumResponse findById(Long id) {
         Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Álbum não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Álbum não encontrado"));
         return new AlbumResponse(album);
     }
 
     @Transactional
     public AlbumResponse update(Long id, AlbumRequest request) {
         Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Álbum não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Álbum não encontrado"));
 
         album.setTitle(request.getTitle());
         album.setReleaseYear(request.getReleaseYear());
@@ -104,7 +107,7 @@ public class AlbumService {
         if (request.getArtistIds() != null && !request.getArtistIds().isEmpty()) {
             List<Artist> artists = artistRepository.findAllById(request.getArtistIds());
             if (artists.isEmpty()) {
-                throw new RuntimeException("Nenhum artista válido encontrado com os IDs fornecidos");
+                throw new ResourceNotFoundException("Nenhum artista válido encontrado com os IDs fornecidos");
             }
             album.setArtists(new HashSet<>(artists));
         }
@@ -114,7 +117,9 @@ public class AlbumService {
 
     @Transactional
     public void deleteAlbum(Long id) {
-        if (!albumRepository.existsById(id)) throw new RuntimeException("Álbum não encontrado");
+        if (!albumRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Álbum não encontrado");
+        }
         albumRepository.deleteById(id);
     }
 
@@ -126,10 +131,10 @@ public class AlbumService {
     @Transactional(readOnly = true)
     public String findImageNameByAlbumId(Long id) {
         Album album = albumRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Álbum não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Álbum não encontrado"));
 
         return albumImageRepository.findByAlbumId(id)
                 .map(AlbumImage::getFileName)
-                .orElseThrow(() -> new RuntimeException("Imagem não encontrada para este álbum"));
+                .orElseThrow(() -> new ResourceNotFoundException("Imagem não encontrada para este álbum"));
     }
 }
