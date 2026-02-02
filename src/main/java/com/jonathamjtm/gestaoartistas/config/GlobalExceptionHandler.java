@@ -1,107 +1,104 @@
 package com.jonathamjtm.gestaoartistas.config;
 
+import com.jonathamjtm.gestaoartistas.dto.StandardError;
+import com.jonathamjtm.gestaoartistas.dto.ValidationError;
+import com.jonathamjtm.gestaoartistas.exception.ResourceNotFoundException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
-import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestControllerAdvice
-@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        log.warn("Erro de validação na requisição [{}]: {}", request.getRequestURI(), ex.getMessage());
+    public ResponseEntity<StandardError> handleValidation(MethodArgumentNotValidException e, HttpServletRequest request) {
+        ValidationError err = new ValidationError(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Erro de validação",
+                "Erro nos campos",
+                request.getRequestURI());
 
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
-
-        Map<String, Object> body = Map.of(
-                "timestamp", LocalDateTime.now(),
-                "status", HttpStatus.BAD_REQUEST.value(),
-                "error", "Erro de Validação",
-                "message", "Verifique os campos informados",
-                "details", errors,
-                "path", request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
-    }
-
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Object> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
-        if (ex.getMessage().toLowerCase().contains("não encontrado")) {
-            log.warn("Recurso não encontrado [{}]: {}", request.getRequestURI(), ex.getMessage());
-            Map<String, Object> body = Map.of(
-                    "timestamp", LocalDateTime.now(),
-                    "status", HttpStatus.NOT_FOUND.value(),
-                    "error", "Não Encontrado",
-                    "message", ex.getMessage(),
-                    "path", request.getRequestURI()
-            );
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+        for (FieldError x : e.getBindingResult().getFieldErrors()) {
+            err.addError(x.getField(), x.getDefaultMessage());
         }
 
-        // Caso contrário, retorna 400 (Bad Request) ou 500 dependendo da regra
-        log.error("Erro de Negócio na requisição [{}]: {}", request.getRequestURI(), ex.getMessage(), ex);
-        Map<String, Object> body = Map.of(
-                "timestamp", LocalDateTime.now(),
-                "status", HttpStatus.BAD_REQUEST.value(),
-                "error", "Erro de Processamento",
-                "message", ex.getMessage(),
-                "path", request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
     }
 
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<Object> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
-        Map<String, Object> body = Map.of(
-                "timestamp", LocalDateTime.now(),
-                "status", HttpStatus.METHOD_NOT_ALLOWED.value(),
-                "error", "Método não permitido",
-                "message", ex.getMessage(),
-                "path", request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(body);
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<StandardError> handleBadCredentials(BadCredentialsException e, HttpServletRequest request) {
+        StandardError err = new StandardError(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Acesso Negado",
+                "Email ou senha inválidos",
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
     }
 
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<Object> handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request) {
-        Map<String, Object> body = Map.of(
-                "timestamp", LocalDateTime.now(),
-                "status", HttpStatus.NOT_FOUND.value(),
-                "error", "Rota não encontrada",
-                "message", "O recurso solicitado não existe",
-                "path", request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<StandardError> handleJwtException(JwtException e, HttpServletRequest request) {
+        StandardError err = new StandardError(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Token Inválido",
+                e.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<StandardError> handleUserNotFoundAuth(UsernameNotFoundException e, HttpServletRequest request) {
+        StandardError err = new StandardError(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Acesso Negado",
+                "Usuário não encontrado ou credenciais inválidas",
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
+    }
+
+    @ExceptionHandler(InsufficientAuthenticationException.class)
+    public ResponseEntity<StandardError> handleInsufficientAuth(InsufficientAuthenticationException e, HttpServletRequest request) {
+        StandardError err = new StandardError(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                "Acesso Negado",
+                "Token ausente ou inválido",
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Object> handleGeneralException(Exception ex, HttpServletRequest request) {
-        log.error("ERRO CRÍTICO/INESPERADO [{}]: {}", request.getRequestURI(), ex.getMessage(), ex);
-        Map<String, Object> body = Map.of(
-                "timestamp", LocalDateTime.now(),
-                "status", HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "error", "Erro Interno do Servidor",
-                "message", "Ocorreu um erro inesperado. Por favor, contate o suporte.",
-                "path", request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    public ResponseEntity<StandardError> handleGeneric(Exception e, HttpServletRequest request) {
+        StandardError err = new StandardError(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Erro de Processamento",
+                e.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<StandardError> handleResourceNotFound(ResourceNotFoundException e, HttpServletRequest request) {
+        StandardError err = new StandardError(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Recurso não encontrado",
+                e.getMessage(),
+                request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
     }
 }
