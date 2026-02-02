@@ -87,6 +87,25 @@ public class AlbumService {
     }
 
     @Transactional
+    public AlbumResponse update(Long id, AlbumRequest request) {
+        Album album = albumRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Álbum não encontrado"));
+
+        album.setTitle(request.getTitle());
+        album.setReleaseYear(request.getReleaseYear());
+
+        if (request.getArtistIds() != null && !request.getArtistIds().isEmpty()) {
+            List<Artist> artists = artistRepository.findAllById(request.getArtistIds());
+            if (artists.isEmpty()) {
+                throw new RuntimeException("Nenhum artista válido encontrado com os IDs fornecidos");
+            }
+            album.setArtists(new HashSet<>(artists));
+        }
+
+        return new AlbumResponse(albumRepository.save(album));
+    }
+
+    @Transactional
     public void deleteAlbum(Long id) {
         if (!albumRepository.existsById(id)) throw new RuntimeException("Álbum não encontrado");
         albumRepository.deleteById(id);
