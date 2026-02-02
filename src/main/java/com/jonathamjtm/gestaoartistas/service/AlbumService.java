@@ -86,6 +86,13 @@ public class AlbumService {
                 .map(AlbumResponse::new);
     }
 
+    @Transactional(readOnly = true)
+    public AlbumResponse findById(Long id) {
+        Album album = albumRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Álbum não encontrado"));
+        return new AlbumResponse(album);
+    }
+
     @Transactional
     public AlbumResponse update(Long id, AlbumRequest request) {
         Album album = albumRepository.findById(id)
