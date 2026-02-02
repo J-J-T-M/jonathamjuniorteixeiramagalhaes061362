@@ -12,11 +12,12 @@ services:
       - "8080:8080"
     depends_on:
       db:
-        condition: service_healthy  # <--- O PULO DO GATO: Espera o banco estar 100%
+        condition: service_healthy  # Espera o banco estar 100%
       minio:
         condition: service_started
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/hemovida_db
+      # ESSA LINHA SOBRESCREVE O APPLICATION.PROPERTIES
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/gestao_artistas_api_db
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
       MINIO_URL: http://minio:9000
@@ -29,19 +30,19 @@ services:
   # ==========================================
   db:
     image: postgres:15-alpine
-    container_name: edital_db
+    container_name: gestao_artistas_db
     restart: always
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: hemovida_db
+      POSTGRES_DB: gestao_artistas_api_db # NOME CORRETO AQUI
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Verifica a cada 5s se o banco já aceita conexões
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d hemovida_db"]
+      # NOME CORRETO NO TESTE DE SAÚDE
+      test: ["CMD-SHELL", "pg_isready -U user -d gestao_artistas_api_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -51,7 +52,7 @@ services:
   # ==========================================
   minio:
     image: minio/minio
-    container_name: edital_minio
+    container_name: gestao_artistas_minio
     restart: always
     command: server /data --console-address ":9001"
     environment:
