@@ -41,6 +41,12 @@ public class ArtistController {
         return ResponseEntity.ok(artistService.findAll(name, createdAfter, sortDirection));
     }
 
+    @PutMapping("/{id}")
+    @Operation(summary = "Atualizar Artista", description = "Atualiza os dados de um artista existente")
+    public ResponseEntity<ArtistResponse> update(@PathVariable Long id, @RequestBody @Valid ArtistRequest request) {
+        return ResponseEntity.ok(artistService.update(id, request));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Deletar Artista", description = "Remove um artista pelo ID")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
