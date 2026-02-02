@@ -13,9 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,8 +27,8 @@ public class RegionalSyncService {
     private String apiUrl;
 
     /**
-     * @Async("jobExecutor"): Diz ao Spring: "Não rode isso na thread principal".
-     * Jogue isso na fila 'jobExecutor' e libere quem chamou imediatamente.
+     * Executa a sincronização em background.
+     * Requisito Sênior: "Atributo alterado -> inativar antigo e criar novo registro"
      */
     @Async("jobExecutor")
     @Transactional
@@ -42,7 +40,7 @@ public class RegionalSyncService {
             ExternalRegionalDTO[] response = restTemplate.getForObject(apiUrl, ExternalRegionalDTO[].class);
 
             if (response != null) {
-                processRegionals(response);
+                syncRegionals(Arrays.asList(response));
             }
 
             long time = System.currentTimeMillis() - start;
@@ -53,43 +51,47 @@ public class RegionalSyncService {
         }
     }
 
-    // Separei a lógica de processamento para ficar mais limpo
-    private void processRegionals(ExternalRegionalDTO[] response) {
-        Map<Long, ExternalRegionalDTO> remoteMap = Arrays.stream(response)
-                .collect(Collectors.toMap(ExternalRegionalDTO::getId, Function.identity()));
+    private void syncRegionals(List<ExternalRegionalDTO> externos) {
+        List<Regional> atuais = regionalRepository.findByActiveTrue();
 
-        List<Regional> localRegionals = regionalRepository.findByActiveTrue();
-        Map<Long, Regional> localMap = localRegionals.stream()
-                .collect(Collectors.toMap(Regional::getId, Function.identity()));
+        for (ExternalRegionalDTO ext : externos) {
+            Optional<Regional> existenteOpt = atuais.stream()
+                    .filter(r -> r.getRegionalId().equals(ext.getId()))
+                    .findFirst();
 
-        // Processa Novos e Alterados
-        for (ExternalRegionalDTO remote : remoteMap.values()) {
-            Regional local = localMap.get(remote.getId());
-            if (local == null) {
-                createNewRegional(remote);
-            } else if (!local.getName().equals(remote.getNome())) {
-                log.info("Atualizando Regional ID {}: {} -> {}", remote.getId(), local.getName(), remote.getNome());
-                local.setName(remote.getNome());
-                regionalRepository.save(local);
+            if (existenteOpt.isPresent()) {
+                Regional existente = existenteOpt.get();
+
+                if (!existente.getName().equals(ext.getNome())) {
+                    log.info("Regional alterada (Versionamento): ID {} | {} -> {}", ext.getId(), existente.getName(), ext.getNome());
+
+                    existente.setActive(false);
+                    regionalRepository.save(existente);
+
+                    Regional novo = Regional.builder()
+                            .regionalId(ext.getId())
+                            .name(ext.getNome())
+                            .active(true)
+                            .build();
+                    regionalRepository.save(novo);
+                }
+
+                atuais.remove(existente);
+            } else {
+                log.info("Nova Regional detectada: ID {} - {}", ext.getId(), ext.getNome());
+                Regional novo = Regional.builder()
+                        .regionalId(ext.getId())
+                        .name(ext.getNome())
+                        .active(true)
+                        .build();
+                regionalRepository.save(novo);
             }
         }
 
-        // Processa Inativos
-        for (Regional local : localRegionals) {
-            if (!remoteMap.containsKey(local.getId())) {
-                log.info("Inativando Regional ID {}", local.getId());
-                local.setActive(false);
-                regionalRepository.save(local);
-            }
+        for (Regional sobrou : atuais) {
+            log.info("Regional removida na origem (Inativando): ID {} - {}", sobrou.getRegionalId(), sobrou.getName());
+            sobrou.setActive(false);
+            regionalRepository.save(sobrou);
         }
-    }
-
-    private void createNewRegional(ExternalRegionalDTO dto) {
-        log.info("Criando Regional ID {}", dto.getId());
-        regionalRepository.save(Regional.builder()
-                .id(dto.getId())
-                .name(dto.getNome())
-                .active(true)
-                .build());
     }
 }
