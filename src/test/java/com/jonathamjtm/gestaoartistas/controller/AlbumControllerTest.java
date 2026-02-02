@@ -128,6 +128,38 @@ class AlbumControllerTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.totalPages").value(2));
     }
 
+    @Test
+    @DisplayName("GET /albums/{id} - Deve retornar álbum por ID")
+    void shouldGetAlbumById() throws Exception {
+        Album album = new Album();
+        album.setTitle("Busca ID");
+        album = albumRepository.save(album);
+
+        mockMvc.perform(get("/api/v1/albums/" + album.getId())
+                        .header("Authorization", gerarTokenAdmin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Busca ID"));
+    }
+
+    @Test
+    @DisplayName("DELETE /albums/{id} - Deve deletar álbum")
+    void shouldDeleteAlbum() throws Exception {
+        // ARRANGE
+        Album album = new Album();
+        album.setTitle("Para Deletar");
+        album = albumRepository.save(album);
+
+        // ACT
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/albums/" + album.getId())
+                        .header("Authorization", gerarTokenAdmin()))
+                .andExpect(status().isNoContent());
+
+        // ASSERT
+        mockMvc.perform(get("/api/v1/albums/" + album.getId())
+                        .header("Authorization", gerarTokenAdmin()))
+                .andExpect(status().isNotFound());
+    }
+
     private void createAlbum(String title, int year, Artist artist) {
         Album album = new Album();
         album.setTitle(title);
