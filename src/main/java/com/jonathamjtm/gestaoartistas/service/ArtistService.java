@@ -37,6 +37,7 @@ public class ArtistService {
         return response;
     }
 
+    @Transactional(readOnly = true) 
     public List<ArtistResponse> findAll(String name, LocalDateTime createdAfter, String sortDirection) {
 
         Sort.Direction direction = "DESC".equalsIgnoreCase(sortDirection) ? Sort.Direction.DESC : Sort.Direction.ASC;
