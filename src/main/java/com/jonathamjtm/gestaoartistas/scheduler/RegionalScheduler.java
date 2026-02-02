@@ -17,15 +17,18 @@ public class RegionalScheduler {
 
     private final RegionalSyncService regionalSyncService;
 
+    // Roda de tempos em tempos (configurado no application.properties)
     @Scheduled(fixedRateString = "${integration.regionais.fixed-rate}")
     public void scheduleSync() {
         log.info("Agendador disparou o job de sincronização...");
-        regionalSyncService.executeSyncJob();
+        // CORREÇÃO: Chamando o método novo 'syncRegionals'
+        regionalSyncService.syncRegionals();
     }
 
+    // Roda uma vez assim que a aplicação sobe
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         log.info("Aplicação iniciada! Disparando job inicial em background...");
-        regionalSyncService.executeSyncJob();
+        regionalSyncService.syncRegionals();
     }
 }
