@@ -1,10 +1,9 @@
 package com.jonathamjtm.gestaoartistas.controller;
 
-import com.jonathamjtm.gestaoartistas.dto.ArtistRequest;
-import com.jonathamjtm.gestaoartistas.dto.ArtistResponse;
+import com.jonathamjtm.gestaoartistas.dto.request.ArtistRequest;
+import com.jonathamjtm.gestaoartistas.dto.response.ArtistResponse;
 import com.jonathamjtm.gestaoartistas.service.ArtistService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,37 +17,41 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/artists")
 @RequiredArgsConstructor
-@Tag(name = "2. Artists – Management", description = "Operações de cadastro e manutenção de bandas e artistas solo")
-@SecurityRequirement(name = "bearer-key")
+@Tag(name = "2. Artistas", description = "Gestão de bandas e cantores")
 public class ArtistController {
 
     private final ArtistService artistService;
 
-    @PostMapping
-    @Operation(summary = "Criar Artista", description = "Cadastra um novo artista e notifica via WebSocket")
-    public ResponseEntity<ArtistResponse> create(@RequestBody @Valid ArtistRequest request) {
-        var response = artistService.createArtist(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
     @GetMapping
-    @Operation(summary = "Listar Artistas", description = "Filtro por nome, data de criação e ordenação.")
-    public ResponseEntity<List<ArtistResponse>> listAll(
+    @Operation(summary = "Listar artistas com filtros")
+    public ResponseEntity<List<ArtistResponse>> findAll(
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) LocalDateTime createdAfter, // Formato ISO
-            @RequestParam(required = false, defaultValue = "ASC") String sortDirection) {
-
+            @RequestParam(required = false) LocalDateTime createdAfter,
+            @RequestParam(defaultValue = "ASC") String sortDirection) {
         return ResponseEntity.ok(artistService.findAll(name, createdAfter, sortDirection));
     }
 
+    @GetMapping("/{id}")
+    @Operation(summary = "Buscar artista por ID")
+    public ResponseEntity<ArtistResponse> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(artistService.findById(id));
+    }
+
+    @PostMapping
+    @Operation(summary = "Criar novo artista")
+    public ResponseEntity<ArtistResponse> create(@RequestBody @Valid ArtistRequest request) {
+        ArtistResponse response = artistService.createArtist(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar Artista", description = "Atualiza os dados de um artista existente")
+    @Operation(summary = "Atualizar artista")
     public ResponseEntity<ArtistResponse> update(@PathVariable Long id, @RequestBody @Valid ArtistRequest request) {
-        return ResponseEntity.ok(artistService.update(id, request));
+        return ResponseEntity.ok(artistService.updateArtist(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Deletar Artista", description = "Remove um artista pelo ID")
+    @Operation(summary = "Remover artista")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         artistService.deleteArtist(id);
         return ResponseEntity.noContent().build();
