@@ -5,7 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,6 +26,10 @@ public class Artist {
 
     @Column(nullable = false)
     private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "artist_type", nullable = false)
+    private ArtistType type;
 
     @ManyToMany(mappedBy = "artists", fetch = FetchType.LAZY)
     @JsonIgnore
