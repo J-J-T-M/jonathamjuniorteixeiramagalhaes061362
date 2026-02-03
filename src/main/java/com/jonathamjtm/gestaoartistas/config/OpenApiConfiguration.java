@@ -10,12 +10,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(
-                title = "Gestão de Artistas API",
-                version = "v1",
-                description = "API para controle de discografia (Teste Sênior)",
+                title = "Gestão de Artistas API - Desafio Técnico SEPLAG",
+                version = "v1.0",
+                description = "API RESTful para controle de discografia (Teste Sênior). " +
+                        "Implementa arquitetura em camadas, segurança JWT, " +
+                        "armazenamento em MinIO e notificações real-time via WebSocket.",
                 contact = @Contact(
-                        name = "Seu Nome",
-                        email = "seu.email@exemplo.com"
+                        name = "Jonatham Junior",
+                        email = "jonatham.junior.18@gmail.com"
                 )
         )
 )
@@ -25,7 +27,6 @@ import org.springframework.context.annotation.Configuration;
         type = SecuritySchemeType.HTTP,
         scheme = "bearer",
         bearerFormat = "JWT",
-        description = "Insira o token JWT aqui para autenticar as requisições."
+        description = "Insira o token JWT gerado no login para autenticar as requisições nos endpoints protegidos."
 )
-public class OpenApiConfiguration {
-}
+public class OpenApiConfiguration { }
