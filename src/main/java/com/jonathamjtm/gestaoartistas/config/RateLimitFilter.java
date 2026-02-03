@@ -25,7 +25,7 @@ public class RateLimitFilter implements Filter {
     private final Map<String, Bucket> cache = new ConcurrentHashMap<>();
 
     @Value("${security.rate-limit.capacity}")
-    private int rateLimitCapacity;
+    private int rateLimitCapacity; // Valor 10 conforme application.properties
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -35,12 +35,8 @@ public class RateLimitFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String path = httpRequest.getRequestURI();
 
-        if (path.startsWith("/swagger-ui") ||
-                path.startsWith("/v3/api-docs") ||
-                path.startsWith("/ws") ||
-                path.startsWith("/actuator") ||
-                path.contains("favicon")) {
-
+        if (path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs") ||
+                path.startsWith("/actuator") || path.contains("favicon")) {
             chain.doFilter(request, response);
             return;
         }
@@ -51,23 +47,24 @@ public class RateLimitFilter implements Filter {
         if (bucket.tryConsume(1)) {
             chain.doFilter(request, response);
         } else {
-            log.warn("Rate Limit excedido para: {}", key);
+            log.warn("Rate Limit excedido para o usuário/IP: {}", key);
             httpResponse.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            httpResponse.getWriter().write("{\"error\": \"Muitas requisicoes. Aguarde um momento.\"}");
             httpResponse.setContentType("application/json");
+            httpResponse.getWriter().write("{\"error\": \"Muitas requisicoes. Limite de 10 por minuto excedido.\"}");
         }
     }
 
     private String resolveKey(HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
-            return auth.getName();
+            return "USER:" + auth.getName();
         }
-        return request.getRemoteAddr();
+        return "IP:" + request.getRemoteAddr();
     }
 
     private Bucket createNewBucket(String key) {
-        Bandwidth limit = Bandwidth.classic(rateLimitCapacity, Refill.greedy(rateLimitCapacity, Duration.ofMinutes(1)));
+        Bandwidth limit = Bandwidth.classic(rateLimitCapacity,
+                Refill.greedy(rateLimitCapacity, Duration.ofMinutes(1)));
         return Bucket.builder()
                 .addLimit(limit)
                 .build();
