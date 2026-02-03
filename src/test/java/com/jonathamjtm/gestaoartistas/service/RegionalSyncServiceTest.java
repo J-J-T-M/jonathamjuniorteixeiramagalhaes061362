@@ -34,6 +34,7 @@ class RegionalSyncServiceTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Deve versionar (Inativar Antigo + Criar Novo) quando o nome mudar")
     void shouldVersionRegionalWhenNameChanges() {
+        // ARRANGE
         Regional oldRegional = new Regional();
         oldRegional.setExternalId(100L);
         oldRegional.setName("Cuiaba Old Name");
@@ -49,14 +50,18 @@ class RegionalSyncServiceTest extends BaseIntegrationTest {
         when(restTemplate.getForObject(eq("http://fake-api.com/regionais"), any()))
                 .thenReturn(apiResponse);
 
+        // ACT
         service.syncRegionals();
 
+        // ASSERT
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
 
             Regional oldInDb = repository.findById(oldRegional.getId()).orElseThrow();
-            assertThat(oldInDb.getActive())
+
+            assertThat(oldInDb.isActive())
                     .as("A regional antiga deveria ter sido inativada")
                     .isFalse();
+
             assertThat(oldInDb.getName()).isEqualTo("Cuiaba Old Name");
 
             Regional newInDb = repository.findByExternalIdAndActiveTrue(100L).orElseThrow(() ->
