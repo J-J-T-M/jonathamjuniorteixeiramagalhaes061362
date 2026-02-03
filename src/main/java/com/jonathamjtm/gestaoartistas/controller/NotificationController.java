@@ -7,7 +7,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
 @Controller
-@Tag(name = "7. Real-time Notifications", description = "Documentação dos fluxos de mensagens via WebSocket (STOMP)")
+@Tag(name = "6. Real-time Notifications", description = "Documentação dos fluxos de mensagens via WebSocket (STOMP)")
 public class NotificationController {
 
     @MessageMapping("/test-connection")
