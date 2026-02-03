@@ -1,10 +1,11 @@
 package com.jonathamjtm.gestaoartistas.service.storage;
 
 import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 public interface FileStorageService {
 
-    String upload(MultipartFile file);
+    List<String> upload(List<MultipartFile> files);
 
     String getPresignedUrl(String fileName);
 
