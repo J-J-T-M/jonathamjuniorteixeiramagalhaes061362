@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/regionais")
 @RequiredArgsConstructor
-@Tag(name = "Regionais", description = "Gerenciamento e Sincronização")
+@Tag(name = "6. Regionals – Synchronization", description = "Integração com serviços externos")
 @SecurityRequirement(name = "bearer-key")
 public class RegionalController {
 

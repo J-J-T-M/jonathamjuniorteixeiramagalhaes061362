@@ -21,7 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/albums")
 @RequiredArgsConstructor
-@Tag(name = "Álbuns", description = "Gerenciamento de discos e lançamentos")
+@Tag(name = "3. Albums – Management", description = "Operações CRUD e busca avançada de álbuns")
 @SecurityRequirement(name = "bearer-key")
 public class AlbumController {
 

@@ -16,7 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/albums")
 @RequiredArgsConstructor
-@Tag(name = "Álbuns", description = "Gerenciamento de capas")
+@Tag(name = "4. Albums – Media", description = "Gerenciamento de mídias e capas de álbuns")
 @SecurityRequirement(name = "bearer-key")
 public class AlbumImageController {
 
