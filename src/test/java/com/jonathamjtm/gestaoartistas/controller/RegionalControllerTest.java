@@ -8,49 +8,51 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class RegionalControllerTest extends BaseIntegrationTest {
 
-    @Autowired
-    private RegionalRepository repository;
+    @Autowired private RegionalRepository regionalRepository;
 
     @BeforeEach
     void setup() {
-        repository.deleteAll();
-
-        Regional r1 = new Regional();
-        r1.setExternalId(101L);
-        r1.setName("Cuiabá");
-        r1.setActive(true);
-        repository.save(r1);
-
-        Regional r2 = new Regional();
-        r2.setExternalId(102L);
-        r2.setName("Rondonópolis (Antiga)");
-        r2.setActive(false);
-        repository.save(r2);
+        regionalRepository.deleteAll();
     }
 
     @Test
-    @DisplayName("GET /api/v1/regionais - Deve trazer TODAS se não filtrar")
-    void shouldListAll() throws Exception {
-        mockMvc.perform(get("/api/v1/regionais")
-                        .header("Authorization", gerarTokenAdmin()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(2));
-    }
+    @DisplayName("GET /api/v1/regionais - Deve listar apenas regionais ATIVAS por padrão ou filtro")
+    void shouldListRegionals() throws Exception {
+        // ARRANGE
+        regionalRepository.save(new Regional(null, 101L, "Cuiabá", true));
+        regionalRepository.save(new Regional(null, 102L, "Várzea Grande", true));
+        regionalRepository.save(new Regional(null, 101L, "Cuiabá (Antigo)", false)); // Histórico
 
-    @Test
-    @DisplayName("GET /api/v1/regionais?active=true - Deve trazer APENAS ATIVAS")
-    void shouldListOnlyActive() throws Exception {
+        // ACT & ASSERT
         mockMvc.perform(get("/api/v1/regionais")
                         .param("active", "true")
                         .header("Authorization", gerarTokenAdmin()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].name").value("Cuiabá"));
+                .andExpect(jsonPath("$.content", hasSize(2))) // Só as 2 ativas
+                .andExpect(jsonPath("$.content[0].active", is(true)));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/regionais - Deve permitir listar histórico (Inativas)")
+    void shouldListInactiveRegionals() throws Exception {
+        // ARRANGE
+        regionalRepository.save(new Regional(null, 101L, "Cuiabá", true));
+        regionalRepository.save(new Regional(null, 101L, "Cuiabá (Antigo)", false));
+
+        // ACT & ASSERT
+        mockMvc.perform(get("/api/v1/regionais")
+                        .param("active", "false")
+                        .header("Authorization", gerarTokenAdmin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].name", is("Cuiabá (Antigo)")));
     }
 }
