@@ -23,5 +23,5 @@ public class Regional {
     private String name;
 
     @Column(nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 }
