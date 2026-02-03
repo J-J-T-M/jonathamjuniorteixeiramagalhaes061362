@@ -10,6 +10,7 @@ import com.jonathamjtm.gestaoartistas.repository.AlbumImageRepository;
 import com.jonathamjtm.gestaoartistas.repository.AlbumRepository;
 import com.jonathamjtm.gestaoartistas.repository.ArtistRepository;
 import com.jonathamjtm.gestaoartistas.repository.specs.AlbumSpecs;
+import com.jonathamjtm.gestaoartistas.service.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +30,9 @@ public class AlbumService {
     private final AlbumRepository albumRepository;
     private final ArtistRepository artistRepository;
     private final AlbumImageRepository albumImageRepository;
+
+    private final FileStorageService fileStorageService;
+
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
@@ -47,7 +52,6 @@ public class AlbumService {
         return response;
     }
 
-    // MÉTODO NOVO: Necessário para o PUT do Controller
     @Transactional
     public AlbumResponse updateAlbum(Long id, AlbumRequest request) {
         Album album = albumRepository.findById(id)
@@ -94,11 +98,34 @@ public class AlbumService {
         albumRepository.deleteById(id);
     }
 
+    @Transactional
+    public List<String> uploadAlbumCovers(Long albumId, List<MultipartFile> files) {
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new ResourceNotFoundException("Álbum não encontrado com ID: " + albumId));
+
+        List<String> fileNames = fileStorageService.upload(files);
+
+        for (int i = 0; i < fileNames.size(); i++) {
+            String fileName = fileNames.get(i);
+            String contentType = files.get(i).getContentType();
+
+            AlbumImage image = AlbumImage.builder()
+                    .fileName(fileName)
+                    .contentType(contentType)
+                    .album(album)
+                    .build();
+
+            albumImageRepository.save(image);
+        }
+
+        return fileNames;
+    }
+
     @Transactional(readOnly = true)
     public String findImageNameByAlbumId(Long albumId) {
-        AlbumImage albumImage = albumImageRepository.findByAlbumId(albumId)
-                .orElseThrow(() -> new ResourceNotFoundException("Imagem não encontrada para o álbum ID: " + albumId));
-        return albumImage.getFileName();
+        return albumImageRepository.findByAlbumId(albumId)
+                .map(AlbumImage::getFileName)
+                .orElseThrow(() -> new ResourceNotFoundException("Nenhuma imagem encontrada para o álbum ID: " + albumId));
     }
 
     private void updateArtists(Album album, List<Long> artistIds) {
