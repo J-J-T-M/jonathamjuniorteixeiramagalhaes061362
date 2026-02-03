@@ -1,6 +1,5 @@
 package com.jonathamjtm.gestaoartistas.controller;
 
-// IMPORTS ATUALIZADOS PARA A NOVA ESTRUTURA DE DTOs
 import com.jonathamjtm.gestaoartistas.dto.request.AlbumRequest;
 import com.jonathamjtm.gestaoartistas.dto.response.AlbumResponse;
 import com.jonathamjtm.gestaoartistas.service.AlbumService;
@@ -19,18 +18,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/albums")
 @RequiredArgsConstructor
-@Tag(name = "Álbuns", description = "Gerenciamento de discos e lançamentos")
+@Tag(name = "3. Álbuns", description = "Gerenciamento de discos e lançamentos")
 @SecurityRequirement(name = "bearer-key")
 public class AlbumController {
 
     private final AlbumService albumService;
-
-    @PostMapping
-    @Operation(summary = "Criar Álbum", description = "Cadastra álbum e vincula a um ou mais artistas")
-    public ResponseEntity<AlbumResponse> create(@RequestBody @Valid AlbumRequest request) {
-        var response = albumService.createAlbum(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
 
     @GetMapping
     @Operation(summary = "Listar Álbuns (Busca Avançada)", description = "Filtre por título, artista e ano de lançamento.")
@@ -47,6 +39,13 @@ public class AlbumController {
     @Operation(summary = "Buscar Álbum por ID")
     public ResponseEntity<AlbumResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(albumService.getAlbumById(id));
+    }
+
+    @PostMapping
+    @Operation(summary = "Criar Álbum", description = "Cadastra álbum e vincula a um ou mais artistas")
+    public ResponseEntity<AlbumResponse> create(@RequestBody @Valid AlbumRequest request) {
+        var response = albumService.createAlbum(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
