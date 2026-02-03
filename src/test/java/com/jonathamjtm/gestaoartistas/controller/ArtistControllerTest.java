@@ -2,8 +2,9 @@ package com.jonathamjtm.gestaoartistas.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jonathamjtm.gestaoartistas.BaseIntegrationTest;
-import com.jonathamjtm.gestaoartistas.dto.ArtistRequest;
+import com.jonathamjtm.gestaoartistas.dto.request.ArtistRequest;
 import com.jonathamjtm.gestaoartistas.entity.Artist;
+import com.jonathamjtm.gestaoartistas.entity.ArtistType; // IMPORT DA NOVA MODELAGEM
 import com.jonathamjtm.gestaoartistas.repository.ArtistRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,9 +34,9 @@ class ArtistControllerTest extends BaseIntegrationTest {
     @DisplayName("GET /artists - Deve filtrar por NOME ignorando Maiúsculas/Minúsculas")
     void shouldFilterByNameCaseInsensitive() throws Exception {
         // ARRANGE
-        artistRepository.save(Artist.builder().name("Guns N' Roses").build());
-        artistRepository.save(Artist.builder().name("L.A. Guns").build());
-        artistRepository.save(Artist.builder().name("Bon Jovi").build());
+        artistRepository.save(Artist.builder().name("Guns N' Roses").type(ArtistType.BAND).build());
+        artistRepository.save(Artist.builder().name("L.A. Guns").type(ArtistType.BAND).build());
+        artistRepository.save(Artist.builder().name("Bon Jovi").type(ArtistType.SINGER).build());
 
         // ACT & ASSERT
         mockMvc.perform(get("/api/v1/artists")
@@ -51,9 +52,9 @@ class ArtistControllerTest extends BaseIntegrationTest {
     @DisplayName("GET /artists - Deve ORDENAR resultados (Z-A)")
     void shouldSortArtistsDesc() throws Exception {
         // ARRANGE
-        artistRepository.save(Artist.builder().name("Alpha").build());
-        artistRepository.save(Artist.builder().name("Beta").build());
-        artistRepository.save(Artist.builder().name("Omega").build());
+        artistRepository.save(Artist.builder().name("Alpha").type(ArtistType.BAND).build());
+        artistRepository.save(Artist.builder().name("Beta").type(ArtistType.SINGER).build());
+        artistRepository.save(Artist.builder().name("Omega").type(ArtistType.BAND).build());
 
         // ACT
         mockMvc.perform(get("/api/v1/artists")
@@ -69,7 +70,7 @@ class ArtistControllerTest extends BaseIntegrationTest {
     @DisplayName("GET /artists - Deve filtrar por DATA DE CRIAÇÃO (Recentes)")
     void shouldFilterByCreatedAfter() throws Exception {
         // ARRANGE
-        artistRepository.save(Artist.builder().name("Artista Recente").build());
+        artistRepository.save(Artist.builder().name("Artista Recente").type(ArtistType.SINGER).build());
 
         String dataOntem = LocalDateTime.now().minusDays(1).toString();
         String dataAmanha = LocalDateTime.now().plusDays(1).toString();
@@ -92,9 +93,10 @@ class ArtistControllerTest extends BaseIntegrationTest {
     @DisplayName("PUT /artists - Deve ATUALIZAR nome do artista")
     void shouldUpdateArtist() throws Exception {
         // ARRANGE
-        Artist artist = artistRepository.save(Artist.builder().name("Nome Antigo").build());
+        Artist artist = artistRepository.save(Artist.builder().name("Nome Antigo").type(ArtistType.SINGER).build());
         ArtistRequest updateRequest = new ArtistRequest();
         updateRequest.setName("Nome Novo");
+        updateRequest.setType(ArtistType.SINGER);
 
         // ACT & ASSERT
         mockMvc.perform(put("/api/v1/artists/" + artist.getId())
@@ -106,11 +108,12 @@ class ArtistControllerTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/artists - Deve criar um artista com sucesso")
+    @DisplayName("POST /api/v1/artists - Deve criar um artista com sucesso (Tipo: BAND)")
     void shouldCreateArtist() throws Exception {
         // ARRANGE
         ArtistRequest request = new ArtistRequest();
         request.setName("Linkin Park");
+        request.setType(ArtistType.BAND);
 
         // ACT & ASSERT
         mockMvc.perform(post("/api/v1/artists")
@@ -128,6 +131,22 @@ class ArtistControllerTest extends BaseIntegrationTest {
         // ARRANGE
         ArtistRequest request = new ArtistRequest();
         request.setName("");
+        request.setType(ArtistType.BAND);
+
+        // ACT & ASSERT
+        mockMvc.perform(post("/api/v1/artists")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("Authorization", gerarTokenAdmin()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/artists - Deve falhar ao criar artista sem TIPO (SINGER/BAND)")
+    void shouldReturnBadRequestWhenTypeIsMissing() throws Exception {
+        // ARRANGE
+        ArtistRequest request = new ArtistRequest();
+        request.setName("Artista Sem Tipo");
 
         // ACT & ASSERT
         mockMvc.perform(post("/api/v1/artists")
