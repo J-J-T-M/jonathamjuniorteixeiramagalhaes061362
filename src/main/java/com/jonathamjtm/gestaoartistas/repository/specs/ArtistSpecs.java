@@ -1,30 +1,25 @@
 package com.jonathamjtm.gestaoartistas.repository.specs;
 
 import com.jonathamjtm.gestaoartistas.entity.Artist;
+import com.jonathamjtm.gestaoartistas.entity.ArtistType;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
 public class ArtistSpecs {
 
-    public static Specification<Artist> filterBy(String name, LocalDateTime createdAfter) {
-        return (root, query, builder) -> {
-            var predicate = builder.conjunction();
+    public static Specification<Artist> nameContainsIgnoreCase(String name) {
+        return (root, query, builder) ->
+                builder.like(builder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+    }
 
-            // Filtro por Nome (LIKE)
-            if (StringUtils.hasText(name)) {
-                predicate = builder.and(predicate,
-                        builder.like(builder.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
-            }
+    public static Specification<Artist> createdAfter(LocalDateTime date) {
+        return (root, query, builder) ->
+                builder.greaterThanOrEqualTo(root.get("createdAt"), date);
+    }
 
-            // Filtro por Data de Criação (A partir de...)
-            if (createdAfter != null) {
-                predicate = builder.and(predicate,
-                        builder.greaterThanOrEqualTo(root.get("createdAt"), createdAfter));
-            }
-
-            return predicate;
-        };
+    public static Specification<Artist> hasType(ArtistType type) {
+        return (root, query, builder) ->
+                builder.equal(root.get("type"), type);
     }
 }
