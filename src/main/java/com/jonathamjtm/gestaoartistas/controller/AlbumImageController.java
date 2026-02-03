@@ -23,14 +23,6 @@ public class AlbumImageController {
     private final FileStorageService fileStorageService;
     private final AlbumService albumService;
 
-    @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload de Capa", description = "Envia a imagem da capa do álbum")
-    public ResponseEntity<String> uploadCover(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
-
-        String fileName = fileStorageService.upload(file);
-        return ResponseEntity.ok("Imagem salva: " + fileName);
-    }
-
     @GetMapping("/{id}/cover")
     @Operation(summary = "Obter Capa", description = "Retorna uma URL temporária (30min) para baixar a imagem")
     public ResponseEntity<Map<String, String>> getCoverUrl(@PathVariable Long id) {
@@ -40,5 +32,13 @@ public class AlbumImageController {
         String url = fileStorageService.getPresignedUrl(fileName);
 
         return ResponseEntity.ok(Map.of("url", url));
+    }
+
+    @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload de Capa", description = "Envia a imagem da capa do álbum")
+    public ResponseEntity<String> uploadCover(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+
+        String fileName = fileStorageService.upload(file);
+        return ResponseEntity.ok("Imagem salva: " + fileName);
     }
 }
