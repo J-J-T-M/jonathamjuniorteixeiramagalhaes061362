@@ -1,9 +1,9 @@
 package com.jonathamjtm.gestaoartistas.controller.auth;
 
-import com.jonathamjtm.gestaoartistas.dto.auth.AuthResponse;
-import com.jonathamjtm.gestaoartistas.dto.auth.LoginRequest;
-import com.jonathamjtm.gestaoartistas.dto.auth.RefreshTokenRequest;
-import com.jonathamjtm.gestaoartistas.dto.auth.RegisterRequest;
+import com.jonathamjtm.gestaoartistas.dto.request.auth.LoginRequest;
+import com.jonathamjtm.gestaoartistas.dto.request.auth.RefreshTokenRequest;
+import com.jonathamjtm.gestaoartistas.dto.request.auth.RegisterRequest;
+import com.jonathamjtm.gestaoartistas.dto.response.auth.AuthResponse;
 import com.jonathamjtm.gestaoartistas.entity.User;
 import com.jonathamjtm.gestaoartistas.repository.UserRepository;
 import com.jonathamjtm.gestaoartistas.service.TokenService;
