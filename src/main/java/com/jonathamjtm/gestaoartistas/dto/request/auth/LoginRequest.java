@@ -1,4 +1,4 @@
-package com.jonathamjtm.gestaoartistas.dto.auth;
+package com.jonathamjtm.gestaoartistas.dto.request.auth;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;

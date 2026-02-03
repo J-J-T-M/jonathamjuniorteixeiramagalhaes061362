@@ -1,4 +1,4 @@
-package com.jonathamjtm.gestaoartistas.dto;
+package com.jonathamjtm.gestaoartistas.dto.error;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
