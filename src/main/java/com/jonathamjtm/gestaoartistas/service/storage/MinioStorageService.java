@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -28,27 +30,26 @@ public class MinioStorageService implements FileStorageService, StorageService {
     @Value("${minio.url-expiration-minutes:30}")
     private Integer urlExpirationMinutes;
 
-
     @Override
-    public String upload(MultipartFile file) {
-        try {
-            String extension = getExtension(file.getOriginalFilename());
-            String fileName = UUID.randomUUID() + "." + extension;
+    public List<String> upload(List<MultipartFile> files) {
+        List<String> uploadedFileNames = new ArrayList<>();
 
-            this.uploadFile(fileName, file.getInputStream(), file.getContentType(), file.getSize());
+        for (MultipartFile file : files) {
+            try {
+                String extension = getExtension(file.getOriginalFilename());
+                String fileName = UUID.randomUUID() + "." + extension;
 
-            return fileName;
-        } catch (Exception e) {
-            log.error("Erro ao processar MultipartFile", e);
-            throw new RuntimeException("Erro ao processar upload de imagem.");
+                // Reutiliza o método de baixo nível
+                this.uploadFile(fileName, file.getInputStream(), file.getContentType(), file.getSize());
+
+                uploadedFileNames.add(fileName);
+            } catch (Exception e) {
+                log.error("Erro ao processar arquivo: {}", file.getOriginalFilename(), e);
+                throw new RuntimeException("Erro ao processar upload de imagem.");
+            }
         }
+        return uploadedFileNames;
     }
-
-    @Override
-    public void delete(String fileName) {
-        this.deleteFile(fileName);
-    }
-
 
     @Override
     public void uploadFile(String fileName, InputStream inputStream, String contentType, long size) {
@@ -61,7 +62,7 @@ public class MinioStorageService implements FileStorageService, StorageService {
                             .contentType(contentType)
                             .build()
             );
-            log.info("Upload concluído: {}", fileName);
+            log.info("Upload MinIO concluído: {}", fileName);
         } catch (Exception e) {
             log.error("Erro ao enviar para MinIO", e);
             throw new RuntimeException("Erro ao fazer upload para o storage.");
@@ -86,6 +87,11 @@ public class MinioStorageService implements FileStorageService, StorageService {
     }
 
     @Override
+    public void delete(String fileName) {
+        this.deleteFile(fileName);
+    }
+
+    @Override
     public void deleteFile(String fileName) {
         try {
             minioClient.removeObject(
@@ -94,7 +100,7 @@ public class MinioStorageService implements FileStorageService, StorageService {
                             .object(fileName)
                             .build()
             );
-            log.info("Arquivo deletado: {}", fileName);
+            log.info("Arquivo deletado do MinIO: {}", fileName);
         } catch (Exception e) {
             log.error("Erro ao deletar do MinIO", e);
         }
