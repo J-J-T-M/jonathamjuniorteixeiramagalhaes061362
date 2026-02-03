@@ -1,7 +1,7 @@
 package com.jonathamjtm.gestaoartistas.config;
 
-import com.jonathamjtm.gestaoartistas.dto.StandardError;
-import com.jonathamjtm.gestaoartistas.dto.ValidationError;
+import com.jonathamjtm.gestaoartistas.dto.error.StandardError;
+import com.jonathamjtm.gestaoartistas.dto.error.ValidationError;
 import com.jonathamjtm.gestaoartistas.exception.ResourceNotFoundException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
