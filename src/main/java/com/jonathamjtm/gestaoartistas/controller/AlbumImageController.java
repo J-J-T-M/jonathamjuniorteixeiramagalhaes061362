@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -35,10 +36,12 @@ public class AlbumImageController {
     }
 
     @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload de Capa", description = "Envia a imagem da capa do álbum")
-    public ResponseEntity<String> uploadCover(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    @Operation(summary = "Upload de Capa", description = "Permite envio de UMA ou MAIS imagens (List<MultipartFile>).")
+    public ResponseEntity<List<String>> uploadCover(
+            @PathVariable Long id,
+            @RequestParam("files") List<MultipartFile> files) {
 
-        String fileName = fileStorageService.upload(file);
-        return ResponseEntity.ok("Imagem salva: " + fileName);
+        List<String> savedFiles = albumService.uploadAlbumCovers(id, files);
+        return ResponseEntity.ok(savedFiles);
     }
 }
