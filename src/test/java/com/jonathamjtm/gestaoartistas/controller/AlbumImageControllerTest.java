@@ -14,6 +14,8 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -23,14 +25,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class AlbumImageControllerTest extends BaseIntegrationTest {
 
-    @Autowired
-    private AlbumRepository albumRepository;
+    @Autowired private AlbumRepository albumRepository;
+    @Autowired private AlbumImageRepository albumImageRepository;
 
-    @Autowired
-    private AlbumImageRepository albumImageRepository;
-
-    @MockitoBean
-    private MinioStorageService minioStorageService;
+    @MockitoBean private MinioStorageService minioStorageService;
 
     @BeforeEach
     void setup() {
@@ -39,23 +37,33 @@ class AlbumImageControllerTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/albums/{id}/cover - Deve fazer upload da capa com sucesso")
-    void shouldUploadAlbumCover() throws Exception {
+    @DisplayName("POST /api/v1/albums/{id}/cover - Deve fazer upload MÚLTIPLO com sucesso")
+    void shouldUploadMultipleCovers() throws Exception {
+        // ARRANGE
         Album album = new Album();
         album.setTitle("Album Teste Upload");
         album = albumRepository.save(album);
 
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "capa.jpg",
+        MockMultipartFile file1 = new MockMultipartFile(
+                "files",
+                "capa1.jpg",
                 MediaType.IMAGE_JPEG_VALUE,
-                "conteudo-da-imagem".getBytes()
+                "conteudo1".getBytes()
         );
 
-        given(minioStorageService.upload(any())).willReturn("nome-arquivo-uuid.jpg");
+        MockMultipartFile file2 = new MockMultipartFile(
+                "files",
+                "capa2.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "conteudo2".getBytes()
+        );
 
+        given(minioStorageService.upload(any())).willReturn(List.of("uuid-capa1.jpg", "uuid-capa2.jpg"));
+
+        // ACT & ASSERT
         mockMvc.perform(multipart("/api/v1/albums/" + album.getId() + "/cover")
-                        .file(file)
+                        .file(file1)
+                        .file(file2)
                         .header("Authorization", gerarTokenAdmin()))
                 .andExpect(status().isOk());
     }
