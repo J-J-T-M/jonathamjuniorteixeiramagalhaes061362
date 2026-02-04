@@ -1,12 +1,12 @@
 # 🎵 Gestão de Artistas API - Desafio Técnico SEPLAG/MT 2026
 
 ![Java 21](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=java)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5-brightgreen?style=for-the-badge&logo=spring)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4-brightgreen?style=for-the-badge&logo=spring)
 ![Docker](https://img.shields.io/badge/Docker-Available-blue?style=for-the-badge&logo=docker)
 ![Security](https://img.shields.io/badge/Spring_Security-JWT-red?style=for-the-badge&logo=springsecurity)
 
-> **Candidato:** Jonatham Junior
-> **Vaga:** Engenheiro da Computação - Sênior
+> **Candidato:** Jonatham Junior Teixeira Magalhães
+> > **Vaga:** Engenheiro da Computação - Sênior
 > **Edital:** Nº 29.150 (SEPLAG/MT)
 
 ---
@@ -23,45 +23,41 @@ A aplicação não é apenas um CRUD; ela implementa padrões de design robustos
 
 ### 1. Camadas e Separação de Responsabilidades (Clean Architecture)
 A estrutura segue o princípio de **Separation of Concerns (SoC)**:
-* **Controller Layer (`web`):** Estritamente acoplada ao protocolo HTTP. Realiza apenas validação de entrada (`Bean Validation`) e conversão de DTOs. Não contém regras de negócio.
-* **Service Layer (`business`):** Coração da aplicação. Gerencia transações (`@Transactional`), orquestra chamadas a repositórios e aplica as regras de negócio.
-* **Persistence Layer (`data`):** Abstração via Spring Data JPA.
-* **Integration Layer:** Serviços isolados para comunicação externa (API de Regionais) e Storage (MinIO).
+* **Web Layer (`controller`):** Realiza validação de entrada (`Bean Validation`) e conversão de DTOs.
+* **Business Layer (`service`):** Orquestra transações (`@Transactional`) e aplica as regras de negócio.
+* **Data Layer (`repository`):** Abstração via Spring Data JPA com suporte a Specifications para filtros dinâmicos.
+* **Entity Layer:** Uso de `entities` para mapeamento objeto-relacional fiel ao banco de dados PostgreSQL.
 
 ### 2. Rate Limiting Híbrido (Segurança Avançada)
-Implementação customizada (`RateLimitFilter`) utilizando o algoritmo **Token Bucket** (via biblioteca Bucket4j).
-* **Estratégia:** O filtro aplica limites dinâmicos baseados na identidade do requisitante.
-    * **Usuário Autenticado:** Limite atrelado ao *Username* (extraído do JWT). Permite maior throughput.
-    * **Anônimo:** Fallback de segurança que aplica o limite baseado no endereço **IP**.
-* **Justificativa:** Protege a infraestrutura contra ataques de Negação de Serviço (DDoS) e Brute Force, garantindo QoS (Quality of Service) para usuários legítimos.
+Implementação customizada via `RateLimitFilter` utilizando o algoritmo **Token Bucket** (via Bucket4j).
+* **Estratégia:** Limites dinâmicos de 10 requisições por minuto.
+    * **Usuário Autenticado:** Limite atrelado ao *Username* extraído do JWT.
+    * **Anônimo:** Fallback baseado no endereço **IP**.
 
 ### 3. Histórico de Dados e SCD Type 2
-Para a integração com a API de Regionais do Estado:
-* **Desafio:** Os nomes das regionais externas podem mudar, mas os relatórios antigos precisam manter a integridade histórica.
+Para a integração com a API de Regionais:
 * **Solução:** Implementação de **Slowly Changing Dimension (SCD) Tipo 2**.
-    * Ao detectar uma alteração na API externa, o registro local antigo é marcado como `active=false`.
-    * Um novo registro é criado com os dados atualizados (`active=true`).
-    * Isso garante auditoria completa e consistência temporal.
+    * Ao detectar alteração na API externa, o registro local antigo é marcado como `active=false`.
+    * Um novo registro é criado com os dados atualizados (`active=true`), garantindo integridade histórica e auditoria.
 
 ### 4. Gestão de Mídia (Object Storage)
-Upload de capas de álbuns desacoplado do banco de dados relacional.
-* **Storage:** Utilização do **MinIO** (compatível com AWS S3).
-* **Segurança:** Imagens não são servidas publicamente de forma direta. A API gera **Presigned URLs** temporárias, garantindo controle de acesso aos ativos digitais.
+Upload de capas de álbuns desacoplado do banco de dados utilizando o **MinIO** (compatível com API S3).
+* **Segurança:** Acesso aos ativos via **Presigned URLs** temporárias com expiração de 30 minutos.
 
 ### 5. Notificações em Tempo Real (Event-Driven)
-Utilização de **WebSockets (STOMP)** para notificar clientes conectados sobre a criação de novos álbuns, eliminando a necessidade de *polling* constante pelo frontend.
+Utilização de **WebSockets (STOMP)** para notificar o frontend a cada novo álbum cadastrado, conforme exigido no edital.
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-* **Core:** Java 21 (LTS), Spring Boot 3.5
+* **Core:** Java 21 (LTS), Spring Boot 3.4.2
 * **Dados:** PostgreSQL 16, Flyway (Migration)
-* **Storage:** MinIO
+* **Storage:** MinIO (API S3)
 * **Segurança:** Spring Security 6, JWT (JJWT), Bucket4j
-* **Documentação:** OpenAPI 3.0 (Swagger UI)
+* **Documentação:** OpenAPI 3.1 (Swagger UI)
 * **Testes:** JUnit 5, Mockito, Testcontainers
-* **Observabilidade:** Spring Actuator
+* **Observabilidade:** Spring Actuator (Health, Liveness/Readiness)
 
 ---
 
@@ -74,7 +70,7 @@ Utilização de **WebSockets (STOMP)** para notificar clientes conectados sobre 
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/jonathamjtm/gestao-artistas-api.git](https://github.com/jonathamjtm/gestao-artistas-api.git)
+    git clone https://github.com/J-J-T-M/jonathamjuniorteixeiramagalhaes061362.git
     cd gestao-artistas-api
     ```
 
@@ -92,52 +88,286 @@ Utilização de **WebSockets (STOMP)** para notificar clientes conectados sobre 
 
 ---
 
-## 🔌 Documentação dos Endpoints Reais
+## 🔌 Documentação Detalhada dos Endpoints
 
-Todos os endpoints (exceto Auth) exigem o cabeçalho: `Authorization: Bearer <token>`
+Todos os endpoints (exceto Auth) exigem o cabeçalho: `Authorization: Bearer <token>`.
+Abaixo seguem os exemplos de **Request Body** e **Response Body** para cada operação.
 
-### 🔐 Autenticação (`/api/v1/auth`)
-| Método | Endpoint | Descrição |
-| :--- | :--- | :--- |
-| **POST** | `/login` | Autentica usuário e retorna JWT + Refresh Token. |
-| **POST** | `/register` | Registra novo usuário no sistema. |
-| **POST** | `/refresh` | Renova o Access Token expirado. |
+### 🔐 1. Authentication
+Endpoints para controle de acesso.
 
-### 🎤 Artistas (`/api/v1/artists`)
-*Gerencia cantores (`SINGER`) e bandas (`BAND`).*
+#### **POST** `/api/v1/auth/register`
+*Registrar um novo usuário.*
 
-| Método | Endpoint | Params/Body | Descrição |
-| :--- | :--- | :--- | :--- |
-| **GET** | `/` | `?name=X`, `?createdAfter=Date`, `?sortDirection=ASC` | Listagem com filtros dinâmicos e ordenação. |
-| **GET** | `/{id}` | - | Detalhes de um artista específico. |
-| **POST** | `/` | `{ "name": "...", "type": "BAND" }` | Cria novo artista. |
-| **PUT** | `/{id}` | `{ "name": "...", "type": "..." }` | Atualiza dados cadastrais. |
-| **DELETE**| `/{id}` | - | Remove o artista (Logicamente ou Fisicamente). |
+**Request Body (JSON):**
+```json
+{
+  "fullName": "Jonatham Junior",
+  "email": "jonatham@email.com",
+  "password": "senha_segura_123"
+}
 
-### 💿 Álbuns (`/api/v1/albums`)
-*Gerencia discografia e vinculação N:N com artistas.*
+```
 
-| Método | Endpoint | Params/Body | Descrição |
-| :--- | :--- | :--- | :--- |
-| **GET** | `/` | `?title=X`, `?artistId=1`, `?releaseYear=2020` | Busca paginada (`Pageable`) de álbuns. |
-| **GET** | `/{id}` | - | Busca álbum por ID. |
-| **POST** | `/` | `{ "title": "...", "releaseYear": 2024, "artistIds": [1, 2] }` | Cria álbum e vincula a artistas. **Dispara WebSocket.** |
-| **PUT** | `/{id}` | `{ "title": "...", ... }` | Atualiza metadados do álbum. |
-| **DELETE**| `/{id}` | - | Deleta o álbum. |
+**Response (200 OK):**
 
-#### 🖼️ Capas de Álbuns (Mídia)
-| Método | Endpoint | Descrição |
-| :--- | :--- | :--- |
-| **GET** | `/{id}/cover` | Retorna JSON com **URL assinada** (temporária) para download seguro da imagem. |
-| **POST** | `/{id}/cover` | Upload `multipart/form-data` da capa (salva no MinIO). |
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "d29a-4b6c-8d1e...",
+  "type": "Bearer"
+}
 
-### 🌍 Regionais (`/api/v1/regionais`)
-*Integração governamental com versionamento histórico.*
+```
 
-| Método | Endpoint | Descrição |
-| :--- | :--- | :--- |
-| **GET** | `/` | Lista regionais sincronizadas. Filtro opcional: `?active=true`. |
-| **POST** | `/sync` | **[Async]** Força o disparo do job de sincronização com a API externa. |
+---
+
+#### **POST** `/api/v1/auth/login`
+
+*Autenticar usuário existente.*
+
+**Request Body:**
+
+```json
+{
+  "email": "admin@email.com",
+  "password": "123456"
+}
+
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "d29a-4b6c-8d1e...",
+  "type": "Bearer"
+}
+
+```
+
+---
+
+### 🎤 2. Artistas
+
+Gestão de bandas e cantores.
+
+#### **POST** `/api/v1/artists`
+
+*Criar novo artista.*
+
+**Request Body:**
+
+```json
+{
+  "name": "Linkin Park",
+  "type": "BAND"
+}
+
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "id": 1,
+  "name": "Linkin Park",
+  "type": "BAND",
+  "albums": [],
+  "createdAt": "2026-02-04T10:00:00Z"
+}
+
+```
+
+#### **GET** `/api/v1/artists/{id}`
+
+*Buscar detalhes do artista.*
+
+**Response (200 OK):**
+
+```json
+{
+  "id": 1,
+  "name": "Linkin Park",
+  "type": "BAND",
+  "albums": [
+    "Hybrid Theory",
+    "Meteora"
+  ],
+  "createdAt": "2026-02-04T10:00:00Z"
+}
+
+```
+
+#### **PUT** `/api/v1/artists/{id}`
+
+*Atualizar dados do artista.*
+
+**Request Body:**
+
+```json
+{
+  "name": "Linkin Park Updated",
+  "type": "BAND"
+}
+
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "id": 1,
+  "name": "Linkin Park Updated",
+  "type": "BAND",
+  "albums": ["Hybrid Theory"],
+  "createdAt": "2026-02-04T10:00:00Z"
+}
+
+```
+
+---
+
+### 💿 3. Álbuns
+
+Gestão de discografia.
+
+#### **POST** `/api/v1/albums`
+
+*Cadastra álbum e vincula a um ou mais artistas. Dispara notificação WebSocket.*
+
+**Request Body:**
+
+```json
+{
+  "title": "Hybrid Theory",
+  "releaseYear": 2000,
+  "artistIds": [
+    1
+  ]
+}
+
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "id": 9007199254740991,
+  "title": "Hybrid Theory",
+  "releaseYear": 2000,
+  "artistIds": [
+    1
+  ]
+}
+
+```
+
+#### **GET** `/api/v1/albums`
+
+*Listagem paginada de álbuns.*
+*Parâmetros opcionais de Query: `?page=0&size=10&sort=title,asc&artistId=1*`
+
+**Response (200 OK):**
+
+```json
+{
+  "content": [
+    {
+      "id": 10,
+      "title": "Hybrid Theory",
+      "releaseYear": 2000,
+      "artistIds": [1]
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 10,
+    "sort": { "sorted": true, "unsorted": false, "empty": false }
+  },
+  "totalElements": 1,
+  "totalPages": 1,
+  "last": true
+}
+
+```
+
+---
+
+### 🖼️ 4. Albums – Media
+
+Upload e download de capas via MinIO (S3).
+
+#### **POST** `/api/v1/albums/{id}/cover`
+
+*Upload de imagem (Multipart).*
+
+**Request (multipart/form-data):**
+
+* `files`: [binary_image.jpg]
+
+**Response (200 OK):**
+
+```json
+[
+  "http://minio:9000/covers/album-1-cover.jpg"
+]
+
+```
+
+#### **GET** `/api/v1/albums/{id}/cover`
+
+*Obter URLs assinadas (temporárias) para download.*
+
+**Response (200 OK):**
+
+```json
+[
+  "http://localhost:9000/covers/album-1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&..."
+]
+
+```
+
+---
+
+### 🌍 5. Regionais – Synchronization
+
+Sincronização governamental.
+
+#### **POST** `/api/v1/regionais/sync`
+
+*Forçar sincronização com API Externa (Processamento Assíncrono).*
+
+**Response (200 OK):**
+
+```json
+"Sincronização iniciada com sucesso. Verifique os logs para status."
+
+```
+
+#### **GET** `/api/v1/regionais`
+
+*Listar regionais sincronizadas.*
+*Parâmetros: `?active=true*`
+
+**Response (200 OK):**
+
+```json
+{
+  "content": [
+    {
+      "id": 55,
+      "externalId": 1020,
+      "name": "Regional Sul",
+      "active": true
+    }
+  ],
+  "totalElements": 1,
+  "totalPages": 1
+}
+
+```
 
 ---
 
@@ -157,13 +387,17 @@ Envie uma mensagem STOMP para `/app/test-connection` e observe a resposta no tó
 
 O projeto garante a qualidade através de **Testes de Integração** robustos (`@SpringBootTest` + `Testcontainers`).
 
-1.  **Containerização:** O banco de dados PostgreSQL é levantado em container Docker para cada bateria de testes, garantindo ambiente limpo.
-2.  **Cenários Cobertos:**
-    * ✅ Ciclo de vida completo (CRUD) de Artistas e Álbuns.
-    * ✅ Validação rigorosa de segurança (401/403) e Rate Limit (429).
-    * ✅ Concorrência na sincronização de Regionais.
-    * ✅ Upload de arquivos (Mock do serviço de Storage).
+1. **Containerização:** O banco de dados PostgreSQL é levantado em container Docker para cada bateria de testes, garantindo ambiente limpo.
+2. **Cenários Cobertos:**
+* ✅ Ciclo de vida completo (CRUD) de Artistas e Álbuns.
+* ✅ Validação rigorosa de segurança (401/403) e Rate Limit (429).
+* ✅ Concorrência na sincronização de Regionais.
+* ✅ Upload de arquivos (Mock do serviço de Storage).
+
+
 
 Para executar os testes:
+
 ```bash
 ./mvnw test
+```
