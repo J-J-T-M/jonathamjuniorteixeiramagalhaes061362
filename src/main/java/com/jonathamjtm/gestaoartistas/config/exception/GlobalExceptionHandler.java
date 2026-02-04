@@ -1,4 +1,4 @@
-package com.jonathamjtm.gestaoartistas.config;
+package com.jonathamjtm.gestaoartistas.config.exception;
 
 import com.jonathamjtm.gestaoartistas.dto.error.StandardError;
 import com.jonathamjtm.gestaoartistas.dto.error.ValidationError;

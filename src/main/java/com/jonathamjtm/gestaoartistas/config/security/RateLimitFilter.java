@@ -1,4 +1,4 @@
-package com.jonathamjtm.gestaoartistas.config;
+package com.jonathamjtm.gestaoartistas.config.security;
 
 import com.jonathamjtm.gestaoartistas.service.TokenService;
 import io.github.bucket4j.Bandwidth;

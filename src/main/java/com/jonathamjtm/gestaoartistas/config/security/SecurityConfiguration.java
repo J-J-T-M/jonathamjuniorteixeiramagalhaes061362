@@ -1,4 +1,4 @@
-package com.jonathamjtm.gestaoartistas.config;
+package com.jonathamjtm.gestaoartistas.config.security;
 
 import com.jonathamjtm.gestaoartistas.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +33,8 @@ public class SecurityConfiguration {
     private final SecurityFilter securityFilter;
     private final UserRepository userRepository;
 
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
+
     @Value("${api.security.allowed-origins}")
     private List<String> allowedOrigins;
 
@@ -58,7 +60,12 @@ public class SecurityConfiguration {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+
+                .exceptionHandling(exception -> exception
+                        .accessDeniedHandler(customAccessDeniedHandler)      // Erro 403
+                        .authenticationEntryPoint(customAccessDeniedHandler) // Erro 401
+                );
 
         return http.build();
     }

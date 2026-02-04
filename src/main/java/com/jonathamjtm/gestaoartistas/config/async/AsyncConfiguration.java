@@ -1,4 +1,4 @@
-package com.jonathamjtm.gestaoartistas.config;
+package com.jonathamjtm.gestaoartistas.config.async;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

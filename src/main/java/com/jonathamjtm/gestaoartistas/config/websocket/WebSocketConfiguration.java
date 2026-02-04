@@ -1,4 +1,4 @@
-package com.jonathamjtm.gestaoartistas.config;
+package com.jonathamjtm.gestaoartistas.config.websocket;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
