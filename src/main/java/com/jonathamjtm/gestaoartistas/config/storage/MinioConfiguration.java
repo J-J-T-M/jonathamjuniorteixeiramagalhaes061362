@@ -29,6 +29,9 @@ public class MinioConfiguration {
     @Value("${minio.bucket-name}")
     private String bucketName;
 
+    @Value("${minio.region:us-east-1}")
+    private String region;
+
     @Bean
     @Primary
     public MinioClient minioClient() {
@@ -43,7 +46,7 @@ public class MinioConfiguration {
         return MinioClient.builder()
                 .endpoint(externalUrl)
                 .credentials(accessKey, secretKey)
-                .region("us-east-1")
+                .region(region)
                 .build();
     }
 
