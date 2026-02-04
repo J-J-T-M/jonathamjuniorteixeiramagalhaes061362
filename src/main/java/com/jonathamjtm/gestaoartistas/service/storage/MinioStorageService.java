@@ -5,8 +5,8 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,11 +18,11 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class MinioStorageService implements FileStorageService, StorageService {
 
     private final MinioClient minioClient;
+    private final MinioClient minioSignerClient;
 
     @Value("${minio.bucket-name}")
     private String bucketName;
@@ -30,22 +30,24 @@ public class MinioStorageService implements FileStorageService, StorageService {
     @Value("${minio.url-expiration-minutes:30}")
     private Integer urlExpirationMinutes;
 
+    public MinioStorageService(@Qualifier("minioClient") MinioClient minioClient,
+                               @Qualifier("minioSignerClient") MinioClient minioSignerClient) {
+        this.minioClient = minioClient;
+        this.minioSignerClient = minioSignerClient;
+    }
+
     @Override
     public List<String> upload(List<MultipartFile> files) {
         List<String> uploadedFileNames = new ArrayList<>();
-
         for (MultipartFile file : files) {
             try {
                 String extension = getExtension(file.getOriginalFilename());
                 String fileName = UUID.randomUUID() + "." + extension;
-
-                // Reutiliza o método de baixo nível
                 this.uploadFile(fileName, file.getInputStream(), file.getContentType(), file.getSize());
-
                 uploadedFileNames.add(fileName);
             } catch (Exception e) {
-                log.error("Erro ao processar arquivo: {}", file.getOriginalFilename(), e);
-                throw new RuntimeException("Erro ao processar upload de imagem.");
+                log.error("Erro no arquivo: {}", file.getOriginalFilename(), e);
+                throw new RuntimeException("Erro ao processar upload.");
             }
         }
         return uploadedFileNames;
@@ -64,15 +66,15 @@ public class MinioStorageService implements FileStorageService, StorageService {
             );
             log.info("Upload MinIO concluído: {}", fileName);
         } catch (Exception e) {
-            log.error("Erro ao enviar para MinIO", e);
-            throw new RuntimeException("Erro ao fazer upload para o storage.");
+            log.error("Erro MinIO Upload", e);
+            throw new RuntimeException("Erro ao enviar para o storage.");
         }
     }
 
     @Override
     public String getPresignedUrl(String fileName) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            String url = minioSignerClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .bucket(bucketName)
                             .object(fileName)
@@ -80,29 +82,29 @@ public class MinioStorageService implements FileStorageService, StorageService {
                             .expiry(urlExpirationMinutes, TimeUnit.MINUTES)
                             .build()
             );
+
+            log.info("URL Gerada para {}: {}", fileName, url);
+
+            return url;
         } catch (Exception e) {
-            log.error("Erro ao gerar URL assinada", e);
+            log.error("Erro URL assinada", e);
             throw new RuntimeException("Erro ao gerar link temporário.");
         }
     }
 
     @Override
     public void delete(String fileName) {
-        this.deleteFile(fileName);
+        deleteFile(fileName);
     }
 
     @Override
     public void deleteFile(String fileName) {
         try {
             minioClient.removeObject(
-                    RemoveObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(fileName)
-                            .build()
+                    RemoveObjectArgs.builder().bucket(bucketName).object(fileName).build()
             );
-            log.info("Arquivo deletado do MinIO: {}", fileName);
         } catch (Exception e) {
-            log.error("Erro ao deletar do MinIO", e);
+            log.error("Erro delete MinIO", e);
         }
     }
 
