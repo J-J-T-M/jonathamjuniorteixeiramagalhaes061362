@@ -11,8 +11,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -41,16 +43,38 @@ public class MinioStorageService implements FileStorageService, StorageService {
         List<String> uploadedFileNames = new ArrayList<>();
         for (MultipartFile file : files) {
             try {
+                validateImageFile(file);
+
                 String extension = getExtension(file.getOriginalFilename());
                 String fileName = UUID.randomUUID() + "." + extension;
+
                 this.uploadFile(fileName, file.getInputStream(), file.getContentType(), file.getSize());
                 uploadedFileNames.add(fileName);
+
             } catch (Exception e) {
-                log.error("Erro no arquivo: {}", file.getOriginalFilename(), e);
-                throw new RuntimeException("Erro ao processar upload.");
+                log.error("Falha crítica no upload do arquivo '{}'. Erro: {}", file.getOriginalFilename(), e.getMessage(), e);
+                throw new RuntimeException("Erro ao processar upload do arquivo: " + file.getOriginalFilename(), e);
             }
         }
         return uploadedFileNames;
+    }
+
+    private void validateImageFile(MultipartFile file) throws IOException {
+        if (file.isEmpty()) throw new IllegalArgumentException("Arquivo vazio não permitido.");
+
+        try (InputStream is = file.getInputStream()) {
+            byte[] header = new byte[8];
+            if (is.read(header) < 4) {
+                throw new IllegalArgumentException("Arquivo corrompido ou muito pequeno.");
+            }
+
+            boolean isPng = (header[0] == (byte) 0x89 && header[1] == (byte) 0x50 && header[2] == (byte) 0x4E && header[3] == (byte) 0x47);
+            boolean isJpeg = (header[0] == (byte) 0xFF && header[1] == (byte) 0xD8 && header[2] == (byte) 0xFF);
+
+            if (!isPng && !isJpeg) {
+                throw new IllegalArgumentException("Formato de arquivo inválido/inseguro. Apenas PNG e JPG reais são aceitos.");
+            }
+        }
     }
 
     @Override
@@ -66,8 +90,8 @@ public class MinioStorageService implements FileStorageService, StorageService {
             );
             log.info("Upload MinIO concluído: {}", fileName);
         } catch (Exception e) {
-            log.error("Erro MinIO Upload", e);
-            throw new RuntimeException("Erro ao enviar para o storage.");
+            log.error("Erro de comunicação com MinIO no upload", e);
+            throw new RuntimeException("Erro de infraestrutura no storage.", e);
         }
     }
 
@@ -82,13 +106,10 @@ public class MinioStorageService implements FileStorageService, StorageService {
                             .expiry(urlExpirationMinutes, TimeUnit.MINUTES)
                             .build()
             );
-
-            log.info("URL Gerada para {}: {}", fileName, url);
-
             return url;
         } catch (Exception e) {
-            log.error("Erro URL assinada", e);
-            throw new RuntimeException("Erro ao gerar link temporário.");
+            log.error("Erro ao gerar URL assinada para: {}", fileName, e);
+            throw new RuntimeException("Erro ao gerar link temporário.", e);
         }
     }
 
@@ -104,7 +125,7 @@ public class MinioStorageService implements FileStorageService, StorageService {
                     RemoveObjectArgs.builder().bucket(bucketName).object(fileName).build()
             );
         } catch (Exception e) {
-            log.error("Erro delete MinIO", e);
+            log.error("Falha ao deletar arquivo '{}' do MinIO", fileName, e);
         }
     }
 
