@@ -51,6 +51,7 @@ public class AuthController {
         return ResponseEntity.ok(AuthResponse.builder()
                 .token(jwtToken)
                 .refreshToken(refreshToken)
+                .type("Bearer")
                 .build());
     }
 
@@ -70,6 +71,7 @@ public class AuthController {
         return ResponseEntity.ok(AuthResponse.builder()
                 .token(jwtToken)
                 .refreshToken(refreshToken)
+                .type("Bearer")
                 .build());
     }
 
@@ -91,6 +93,7 @@ public class AuthController {
                 return ResponseEntity.ok(AuthResponse.builder()
                         .token(newAccessToken)
                         .refreshToken(requestRefreshToken)
+                        .type("Bearer")
                         .build());
             }
         }
