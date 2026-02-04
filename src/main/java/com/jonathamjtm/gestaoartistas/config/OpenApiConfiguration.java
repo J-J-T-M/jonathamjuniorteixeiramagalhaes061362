@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,9 +20,9 @@ import org.springframework.context.annotation.Configuration;
                         name = "Jonatham Junior",
                         email = "jonatham.junior.18@gmail.com"
                 )
-        )
+        ),
+        security = @SecurityRequirement(name = "bearer-key")
 )
-
 @SecurityScheme(
         name = "bearer-key",
         type = SecuritySchemeType.HTTP,
