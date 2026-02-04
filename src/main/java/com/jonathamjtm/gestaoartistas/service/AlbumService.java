@@ -30,9 +30,7 @@ public class AlbumService {
     private final AlbumRepository albumRepository;
     private final ArtistRepository artistRepository;
     private final AlbumImageRepository albumImageRepository;
-
     private final FileStorageService fileStorageService;
-
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
@@ -46,7 +44,7 @@ public class AlbumService {
         album = albumRepository.save(album);
         AlbumResponse response = mapToResponse(album);
 
-        // Notificação WebSocket
+        // Notificação WebSocket: "/topic/albums"
         messagingTemplate.convertAndSend("/topic/albums", response);
 
         return response;
@@ -98,6 +96,7 @@ public class AlbumService {
         albumRepository.deleteById(id);
     }
 
+
     @Transactional
     public List<String> uploadAlbumCovers(Long albumId, List<MultipartFile> files) {
         Album album = albumRepository.findById(albumId)
@@ -119,6 +118,19 @@ public class AlbumService {
         }
 
         return fileNames;
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> findAllImageNamesByAlbumId(Long albumId) {
+        if (!albumRepository.existsById(albumId)) {
+            throw new ResourceNotFoundException("Álbum não encontrado com ID: " + albumId);
+        }
+
+        // Requer que o Repository tenha o método: List<AlbumImage> findAllByAlbumId(Long id);
+        return albumImageRepository.findAllByAlbumId(albumId)
+                .stream()
+                .map(AlbumImage::getFileName)
+                .toList();
     }
 
     @Transactional(readOnly = true)
