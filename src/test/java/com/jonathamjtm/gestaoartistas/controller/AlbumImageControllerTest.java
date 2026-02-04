@@ -17,6 +17,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -37,7 +38,7 @@ class AlbumImageControllerTest extends BaseIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/albums/{id}/cover - Deve fazer upload MÚLTIPLO com sucesso")
+    @DisplayName("POST /api/v1/albums/{id}/cover - Deve fazer upload MÚLTIPLO e retornar 201 com URLs")
     void shouldUploadMultipleCovers() throws Exception {
         // ARRANGE
         Album album = new Album();
@@ -60,17 +61,23 @@ class AlbumImageControllerTest extends BaseIntegrationTest {
 
         given(minioStorageService.upload(any())).willReturn(List.of("uuid-capa1.jpg", "uuid-capa2.jpg"));
 
+        given(minioStorageService.getPresignedUrl(anyString())).willReturn("http://localhost:9000/teste-url-assinada");
+
         // ACT & ASSERT
         mockMvc.perform(multipart("/api/v1/albums/" + album.getId() + "/cover")
                         .file(file1)
                         .file(file2)
                         .header("Authorization", gerarTokenAdmin()))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$").isArray()) // Deve ser uma lista
+                .andExpect(jsonPath("$[0]").value("http://localhost:9000/teste-url-assinada"))
+                .andExpect(jsonPath("$[1]").value("http://localhost:9000/teste-url-assinada"));
     }
 
     @Test
-    @DisplayName("GET /api/v1/albums/{id}/cover - Deve retornar URL assinada")
-    void shouldGetCoverUrl() throws Exception {
+    @DisplayName("GET /api/v1/albums/{id}/cover - Deve retornar LISTA de URLs assinadas")
+    void shouldGetCoverUrls() throws Exception {
+        // ARRANGE
         Album album = new Album();
         album.setTitle("Album URL");
         album = albumRepository.save(album);
@@ -85,9 +92,11 @@ class AlbumImageControllerTest extends BaseIntegrationTest {
         String urlFalsa = "http://localhost:9000/bucket/arquivo-no-minio.jpg?token=123";
         given(minioStorageService.getPresignedUrl(image.getFileName())).willReturn(urlFalsa);
 
+        // ACT & ASSERT
         mockMvc.perform(get("/api/v1/albums/" + album.getId() + "/cover")
                         .header("Authorization", gerarTokenAdmin()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.url").value(urlFalsa));
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0]").value(urlFalsa));
     }
 }
