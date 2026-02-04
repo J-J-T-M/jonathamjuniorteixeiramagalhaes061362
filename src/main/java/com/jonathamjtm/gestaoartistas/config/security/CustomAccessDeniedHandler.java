@@ -21,12 +21,12 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler, Authentic
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
-        montarResposta(response, HttpServletResponse.SC_FORBIDDEN, "Acesso Negado", "Você não tem permissão para acessar este recurso.", request.getRequestURI());
+        montarResposta(response, HttpServletResponse.SC_FORBIDDEN, "Acesso Negado", "Voce nao tem permissao para acessar este recurso.", request.getRequestURI());
     }
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-        montarResposta(response, HttpServletResponse.SC_UNAUTHORIZED, "Não Autorizado", "Token inválido ou não informado.", request.getRequestURI());
+        montarResposta(response, HttpServletResponse.SC_UNAUTHORIZED, "Nao Autorizado", "Token invalido ou nao informado.", request.getRequestURI());
     }
 
     private void montarResposta(HttpServletResponse response, int status, String error, String message, String path) throws IOException {

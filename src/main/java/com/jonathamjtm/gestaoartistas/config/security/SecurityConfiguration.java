@@ -90,7 +90,7 @@ public class SecurityConfiguration {
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
     }
 
     @Bean
