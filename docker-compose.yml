@@ -56,6 +56,8 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+      # --- ALTERAÇÃO 1: Define a URL externa para corrigir a assinatura ---
+      MINIO_SERVER_URL: http://localhost:9000
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -73,7 +75,8 @@ services:
       /bin/sh -c "
       /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
       /usr/bin/mc mb myminio/capas-albuns;
-      /usr/bin/mc anonymous set public myminio/capas-albuns;
+      # --- ALTERAÇÃO 2: Removido o comando que deixava público ---
+      # /usr/bin/mc anonymous set public myminio/capas-albuns;
       exit 0;
       "
 
