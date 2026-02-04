@@ -4,6 +4,7 @@ import com.jonathamjtm.gestaoartistas.BaseIntegrationTest;
 import com.jonathamjtm.gestaoartistas.dto.ExternalRegionalDTO;
 import com.jonathamjtm.gestaoartistas.entity.Regional;
 import com.jonathamjtm.gestaoartistas.repository.RegionalRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,36 @@ class RegionalSyncServiceTest extends BaseIntegrationTest {
 
     @MockitoBean
     private RestTemplate restTemplate;
+
+    @BeforeEach
+    void setup() {
+        repository.deleteAll();
+    }
+
+    @Test
+    @DisplayName("Deve executar sincronização de forma ASSÍNCRONA (Sem Deadlock)")
+    void shouldSyncAsync() {
+        // ARRANGE
+        ExternalRegionalDTO dto = new ExternalRegionalDTO();
+        dto.setId(500L);
+        dto.setNome("Async City");
+
+        when(restTemplate.getForObject(eq("http://fake-api.com/regionais"), any()))
+                .thenReturn(new ExternalRegionalDTO[]{dto});
+
+        // ACT
+        long startTime = System.currentTimeMillis();
+        service.syncRegionals();
+        long endTime = System.currentTimeMillis();
+
+        // ASSERT
+        assertThat(endTime - startTime).isLessThan(200);
+
+        await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+            assertThat(repository.count()).isEqualTo(1);
+            assertThat(repository.findAll().get(0).getName()).isEqualTo("Async City");
+        });
+    }
 
     @Test
     @DisplayName("Deve versionar (Inativar Antigo + Criar Novo) quando o nome mudar")
